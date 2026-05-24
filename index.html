@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sondage Express Pro PC</title>
+    <title>Sondage Express Automatique</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
         .container { max-width: 600px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: auto; }
@@ -48,7 +48,7 @@
         <button class="btn" onclick="genererSondage()">Créer l'invitation</button>
 
         <div id="result-zone-create" class="result-box hidden">
-            <strong style="color: #0056b3;">👇 Option de secours : Copier / Coller</strong>
+            <strong style="color: #0056b3;">👇 Étape finale : Copiez ce texte pour votre mail :</strong>
             <textarea id="text-to-copy-create" readonly></textarea>
             <button class="btn" style="background: #28a745; margin-top: 10px;" onclick="selectionnerEtCopier('text-to-copy-create')">👉 Copier le texte pour votre mail</button>
         </div>
@@ -63,7 +63,7 @@
         <label>Cochez vos disponibilités :</label>
         <div id="options-container"></div>
 
-        <button class="btn" style="background:#28a745;" onclick="envoyerVotePC()">📨 Envoyer ma réponse</button>
+        <button id="submit-vote-btn" class="btn" style="background:#28a745;" onclick="envoyerVoteAutomatique()">📨 Envoyer ma réponse</button>
 
         <div class="table-section">
             <h3>📊 Réponses des participants</h3>
@@ -89,24 +89,30 @@
             document.getElementById('view-vote').classList.remove('hidden');
             document.getElementById('poll-title').innerText = "Sondage : " + urlParams.get('title');
             
-            const datesUrl = urlParams.get('dates').split(',');
-            const container = document.getElementById('options-container');
-            container.innerHTML = "";
-            datesUrl.forEach(date => {
-                container.innerHTML += `
-                    <label class="option-check">
-                        <input type="checkbox" name="dates-choices" value="${date}">
-                        <span>${date}</span>
-                    </label>`;
-            });
+            const datesParam = urlParams.get('dates');
+            if (datesParam) {
+                const datesUrl = datesParam.split(',').filter(d => d.trim() !== "");
+                const container = document.getElementById('options-container');
+                container.innerHTML = "";
+                
+                if (datesUrl.length === 0) {
+                    container.innerHTML = "<p style='color:red;'>⚠️ Aucune date valide n'a été trouvée.</p>";
+                } else {
+                    datesUrl.forEach(date => {
+                        container.innerHTML += `
+                            <label class="option-check">
+                                <input type="checkbox" name="dates-choices" value="${date}">
+                                <span>${date}</span>
+                            </label>`;
+                    });
+                }
 
-            const votesUrl = urlParams.get('votes');
-            if (votesUrl) { 
-                try {
-                    votesExistants = JSON.parse(decodeURIComponent(votesUrl)); 
-                } catch(e) { votesExistants = []; }
+                const votesUrl = urlParams.get('votes');
+                if (votesUrl) { 
+                    try { votesExistants = JSON.parse(decodeURIComponent(votesUrl)); } catch(e) { votesExistants = []; }
+                }
+                construireTableau(datesUrl);
             }
-            construireTableau(datesUrl);
         }
     });
 
@@ -138,8 +144,17 @@
     function genererSondage() {
         const emailOrganisatrice = document.getElementById('organizer-email').value.trim();
         const titre = document.getElementById('title').value.trim();
+        const dateInput = document.getElementById('date-input');
+
+        // Sécurité anti-oubli du bouton "+"
+        if (datesSelectionnees.length === 0 && dateInput && dateInput.value) {
+            const dateObj = new Date(dateInput.value);
+            const dateFormatee = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+            datesSelectionnees.push(dateFormatee);
+        }
+
         if (!emailOrganisatrice || !titre || datesSelectionnees.length === 0) {
-            alert("Veuillez remplir tous les champs et ajouter des dates !"); 
+            alert("Veuillez remplir les champs et indiquer au moins une date !"); 
             return;
         }
         
@@ -152,14 +167,7 @@
         
         document.getElementById('text-to-copy-create').value = corps;
         document.getElementById('result-zone-create').classList.remove('hidden');
-
-        // Ouverture directe et ultra-fiable dans Gmail Web ou Outlook Web
-        const sujetMail = "Invitation : " + titre;
-        const webMailUrl = emailOrganisatrice.includes("gmail") 
-            ? `https://mail.google.com/mail/?view=cm&fs=1&to=&su=${encodeURIComponent(sujetMail)}&body=${encodeURIComponent(corps)}`
-            : `https://outlook.live.com/default.aspx?rru=compose&subject=${encodeURIComponent(sujetMail)}&body=${encodeURIComponent(corps)}`;
-        
-        window.open(webMailUrl, '_blank');
+        alert("L'invitation est prête en bas ! Cliquez sur le bouton vert pour copier le texte.");
     }
 
     function construireTableau(datesUrl) {
@@ -182,14 +190,19 @@
         });
     }
 
-    function envoyerVotePC() {
+    function envoyerVoteAutomatique() {
         const nom = document.getElementById('voter-name').value.trim();
         if (!nom) { alert("Veuillez entrer votre nom."); return; }
+
+        const btn = document.getElementById('submit-vote-btn');
+        btn.innerText = "⏳ Envoi en cours...";
+        btn.disabled = true;
 
         const checkboxes = document.querySelectorAll('input[name="dates-choices"]:checked');
         const mesChoix = Array.from(checkboxes).map(cb => cb.value);
         const titreSondage = urlParams.get('title');
-        const datesUrl = urlParams.get('dates');
+        const datesParam = urlParams.get('dates');
+        const datesUrl = datesParam.split(',').filter(d => d.trim() !== "");
         const mailDestinataire = urlParams.get('to');
 
         const nouvelleParticipation = { nom: nom, choix: mesChoix };
@@ -198,28 +211,51 @@
         const lienMisAJour = window.location.origin + window.location.pathname 
             + "?title=" + encodeURIComponent(titreSondage) 
             + "&to=" + encodeURIComponent(mailDestinataire)
-            + "&dates= " + encodeURIComponent(datesUrl)
+            + "&dates=" + encodeURIComponent(datesParam)
             + "&votes=" + encodeURIComponent(JSON.stringify(copieVotes));
 
         let texteChoix = mesChoix.length > 0 
-            ? "Je suis disponible aux dates suivantes :\n" + mesChoix.map(d => `✅ ${d}`).join('\n')
-            : "❌ Je ne suis disponible à aucune des dates proposées.";
+            ? "Disponible le : " + mesChoix.join(', ')
+            : "❌ Indisponible à toutes les dates.";
 
-        const corpsReponse = `Bonjour,\n\nVoici mes disponibilités pour "${titreSondage}" :\n\n👤 Nom : ${nom}\n\n${texteChoix}\n\n⚠️ IMPORTANT (Pour mettre à jour le tableau général de l'organisatrice, cliquez sur ce lien) :\n👉 ${lienMisAJour}`;
-        
-        const sujetReponse = `Réponse Sondage : ${nom} - ${titreSondage}`;
-        const webMailUrl = mailDestinataire.includes("gmail")
-            ? `https://mail.google.com/mail/?view=cm&fs=1&to=${mailDestinataire}&su=${encodeURIComponent(sujetReponse)}&body=${encodeURIComponent(corpsReponse)}`
-            : `https://outlook.live.com/default.aspx?rru=compose&to=${mailDestinataire}&subject=${encodeURIComponent(sujetReponse)}&body=${encodeURIComponent(corpsReponse)}`;
-
-        window.open(webMailUrl, '_blank');
+        // Envoi en tâche de fond 100% invisible via FormSubmit
+        fetch(`https://formsubmit.co/ajax/${mailDestinataire}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({
+                "Événement": titreSondage,
+                "Nom": nom,
+                "Disponibilités": texteChoix,
+                "LIEN DU TABLEAU INTERACTIF": lienMisAJour,
+                "_subject": `📥 Nouveau Vote : ${nom} - ${tit Sondage}`
+            })
+        })
+        .then(response => {
+            btn.innerText = "📨 Envoyer ma réponse";
+            btn.disabled = false;
+            
+            if (response.ok) {
+                alert("🎉 Réponse enregistrée ! Votre choix a été envoyé directement en arrière-plan à l'organisatrice.");
+                votesExistants.push(nouvelleParticipation);
+                construireTableau(datesUrl);
+                document.getElementById('voter-name').value = "";
+                checkboxes.forEach(cb => cb.checked = false);
+            } else {
+                alert("Erreur lors de l'envoi automatique.");
+            }
+        })
+        .catch(() => {
+            btn.innerText = "📨 Envoyer ma réponse";
+            btn.disabled = false;
+            alert("Erreur réseau. Impossible d'envoyer.");
+        });
     }
 
     window.selectionnerEtCopier = function(idChamp) {
         const champ = document.getElementById(idChamp);
         champ.select();
         document.execCommand("copy");
-        alert("Texte copié ! Vous pouvez le coller directement (Ctrl + V) dans votre e-mail.");
+        alert("Texte copié ! Vous pouvez le coller (Ctrl + V) dans Outlook ou Gmail.");
     }
 </script>
 </body>
