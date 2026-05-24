@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sondage Express PC Multi-Utilisateurs</title>
+    <title>Sondage Express Pro PC</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
         .container { max-width: 600px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: auto; }
@@ -19,7 +19,7 @@
         .option-check input { margin-right: 12px; transform: scale(1.2); }
         .hidden { display: none; }
         .result-box { background: #e9ecef; padding: 15px; border-radius: 6px; margin-top: 20px; border: 2px dashed #007bff; }
-        textarea { width: 100%; height: 130px; margin-top: 10px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; font-size: 14px; box-sizing: border-box; resize: none; }
+        textarea { width: 100%; height: 140px; margin-top: 10px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; font-size: 14px; box-sizing: border-box; resize: none; }
         .table-section { margin-top: 25px; padding-top: 20px; border-top: 2px solid #eee; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; font-size: 14px; }
         th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; }
@@ -38,35 +38,32 @@
         <input type="email" id="organizer-email" placeholder="exemple@mail.com">
 
         <label for="title">Quel est le titre de l'événement ?</label>
-        <input type="text" id="title" placeholder="Ex: Repas de famille, Réunion...">
+        <input type="text" id="title" placeholder="Ex: Repas de famille, Grillade...">
 
         <label>Proposer des dates :</label>
         <input type="date" id="date-input">
         <button class="btn btn-add" onclick="ajouterDate()">➕ Ajouter cette date</button>
         <div id="dates-list"></div>
 
-        <button class="btn" onclick="genererSondage()">1. Créer l'invitation</button>
+        <button class="btn" onclick="genererSondage()">Créer l'invitation</button>
 
         <div id="result-zone-create" class="result-box hidden">
-            <strong style="color: #0056b3;">👇 Étape finale : Copiez ce texte pour votre mail :</strong>
+            <strong style="color: #0056b3;">👇 Option de secours : Copier / Coller</strong>
             <textarea id="text-to-copy-create" readonly></textarea>
-            <button class="btn" style="background: #28a745; margin-top: 10px;" onclick="selectionnerEtCopier('text-to-copy-create')">👉 Sélectionner et copier le texte</button>
-            <p style="font-size: 13px; color: #666; margin-top: 5px; text-align: center;">Collez-le ensuite dans Gmail ou Outlook pour l'envoyer à vos invités.</p>
+            <button class="btn" style="background: #28a745; margin-top: 10px;" onclick="selectionnerEtCopier('text-to-copy-create')">👉 Copier le texte pour votre mail</button>
         </div>
     </div>
 
     <div id="view-vote" class="hidden">
         <h2 id="poll-title">Sondage</h2>
         
-        <form id="form-vote-auto">
-            <label for="voter-name">Votre Nom et Prénom :</label>
-            <input type="text" id="voter-name" placeholder="Ex: Marie Durant" required>
+        <label for="voter-name">Votre Nom et Prénom :</label>
+        <input type="text" id="voter-name" placeholder="Ex: Marie Durant">
 
-            <label>Cochez vos disponibilités :</label>
-            <div id="options-container"></div>
+        <label>Cochez vos disponibilités :</label>
+        <div id="options-container"></div>
 
-            <button type="submit" class="btn" style="background:#28a745;">📨 Envoyer ma réponse</button>
-        </form>
+        <button class="btn" style="background:#28a745;" onclick="envoyerVotePC()">📨 Envoyer ma réponse</button>
 
         <div class="table-section">
             <h3>📊 Réponses des participants</h3>
@@ -94,6 +91,7 @@
             
             const datesUrl = urlParams.get('dates').split(',');
             const container = document.getElementById('options-container');
+            container.innerHTML = "";
             datesUrl.forEach(date => {
                 container.innerHTML += `
                     <label class="option-check">
@@ -103,7 +101,11 @@
             });
 
             const votesUrl = urlParams.get('votes');
-            if (votesUrl) { votesExistants = JSON.parse(decodeURIComponent(votesUrl)); }
+            if (votesUrl) { 
+                try {
+                    votesExistants = JSON.parse(decodeURIComponent(votesUrl)); 
+                } catch(e) { votesExistants = []; }
+            }
             construireTableau(datesUrl);
         }
     });
@@ -137,18 +139,27 @@
         const emailOrganisatrice = document.getElementById('organizer-email').value.trim();
         const titre = document.getElementById('title').value.trim();
         if (!emailOrganisatrice || !titre || datesSelectionnees.length === 0) {
-            alert("Veuillez remplir tous les champs !"); return;
+            alert("Veuillez remplir tous les champs et ajouter des dates !"); 
+            return;
         }
         
-        // On cache le mail de l'organisatrice DIRECTEMENT dans le lien magique transmis aux invités
         const lienVote = window.location.origin + window.location.pathname 
             + "?title=" + encodeURIComponent(titre) 
             + "&to=" + encodeURIComponent(emailOrganisatrice) 
             + "&dates=" + encodeURIComponent(datesSelectionnees.join(','));
 
         const corps = `Bonjour,\n\nMerci de cocher vos disponibilités pour l'événement "${titre}" en cliquant sur le lien ci-dessous :\n\n👉 ${lienVote}\n\nÀ bientôt !`;
+        
         document.getElementById('text-to-copy-create').value = corps;
         document.getElementById('result-zone-create').classList.remove('hidden');
+
+        // Ouverture directe et ultra-fiable dans Gmail Web ou Outlook Web
+        const sujetMail = "Invitation : " + titre;
+        const webMailUrl = emailOrganisatrice.includes("gmail") 
+            ? `https://mail.google.com/mail/?view=cm&fs=1&to=&su=${encodeURIComponent(sujetMail)}&body=${encodeURIComponent(corps)}`
+            : `https://outlook.live.com/default.aspx?rru=compose&subject=${encodeURIComponent(sujetMail)}&body=${encodeURIComponent(corps)}`;
+        
+        window.open(webMailUrl, '_blank');
     }
 
     function construireTableau(datesUrl) {
@@ -158,26 +169,28 @@
         const tbody = document.getElementById('table-body');
         tbody.innerHTML = "";
         if (votesExistants.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="${datesUrl.length + 1}" style="color:#888;">Aucune réponse pour le moment.</td></tr>`; return;
+            tbody.innerHTML = `<tr><td colspan="${datesUrl.length + 1}" style="color:#888;">Aucune réponse pour le moment.</td></tr>`; 
+            return;
         }
         votesExistants.forEach(v => {
             let ligne = `<tr><td style="font-weight:bold; text-align:left;">👤 ${v.nom}</td>`;
             datesUrl.forEach(date => {
                 ligne += v.choix.includes(date) ? `<td class="vibrant-oui">OUI</td>` : `<td class="vibrant-non">NON</td>`;
             });
-            ligne += `</tr>`; tbody.innerHTML += ligne;
+            ligne += `</tr>`; 
+            tbody.innerHTML += ligne;
         });
     }
 
-    document.getElementById('form-vote-auto').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
+    function envoyerVotePC() {
         const nom = document.getElementById('voter-name').value.trim();
+        if (!nom) { alert("Veuillez entrer votre nom."); return; }
+
         const checkboxes = document.querySelectorAll('input[name="dates-choices"]:checked');
         const mesChoix = Array.from(checkboxes).map(cb => cb.value);
         const titreSondage = urlParams.get('title');
         const datesUrl = urlParams.get('dates');
-        const mailDestinataire = urlParams.get('to'); // On récupère dynamiquement le mail lié à CE sondage
+        const mailDestinataire = urlParams.get('to');
 
         const nouvelleParticipation = { nom: nom, choix: mesChoix };
         const copieVotes = [...votesExistants, nouvelleParticipation];
@@ -185,39 +198,28 @@
         const lienMisAJour = window.location.origin + window.location.pathname 
             + "?title=" + encodeURIComponent(titreSondage) 
             + "&to=" + encodeURIComponent(mailDestinataire)
-            + "&dates=" + encodeURIComponent(datesUrl)
+            + "&dates= " + encodeURIComponent(datesUrl)
             + "&votes=" + encodeURIComponent(JSON.stringify(copieVotes));
 
-        // Utilisation du service FormSubmit avec le mail dynamique extrait de l'URL
-        const endpointFormSubmit = `https://formsubmit.co/ajax/${mailDestinataire}`;
+        let texteChoix = mesChoix.length > 0 
+            ? "Je suis disponible aux dates suivantes :\n" + mesChoix.map(d => `✅ ${d}`).join('\n')
+            : "❌ Je ne suis disponible à aucune des dates proposées.";
 
-        fetch(endpointFormSubmit, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({
-                "Événement": titreSondage,
-                "Nom du Participant": nom,
-                "Ses Disponibilités": mesChoix.length > 0 ? mesChoix.join(', ') : "Aucune date cochée",
-                "LIEN DU TABLEAU MIS A JOUR": lienMisAJour,
-                "_subject": `Réponse Sondage : ${nom} - ${titreSondage}` // Sujet personnalisé du mail reçu
-            })
-        })
-        .then(response => {
-            if (response.ok) {
-                alert("🎉 Merci ! Votre réponse a été envoyée automatiquement.");
-                votesExistants.push(nouvelleParticipation);
-                construireTableau(datesUrl.split(','));
-            } else {
-                alert("Erreur lors de l'envoi.");
-            }
-        });
-    });
+        const corpsReponse = `Bonjour,\n\nVoici mes disponibilités pour "${titreSondage}" :\n\n👤 Nom : ${nom}\n\n${texteChoix}\n\n⚠️ IMPORTANT (Pour mettre à jour le tableau général de l'organisatrice, cliquez sur ce lien) :\n👉 ${lienMisAJour}`;
+        
+        const sujetReponse = `Réponse Sondage : ${nom} - ${titreSondage}`;
+        const webMailUrl = mailDestinataire.includes("gmail")
+            ? `https://mail.google.com/mail/?view=cm&fs=1&to=${mailDestinataire}&su=${encodeURIComponent(sujetReponse)}&body=${encodeURIComponent(corpsReponse)}`
+            : `https://outlook.live.com/default.aspx?rru=compose&to=${mailDestinataire}&subject=${encodeURIComponent(sujetReponse)}&body=${encodeURIComponent(corpsReponse)}`;
+
+        window.open(webMailUrl, '_blank');
+    }
 
     window.selectionnerEtCopier = function(idChamp) {
         const champ = document.getElementById(idChamp);
         champ.select();
         document.execCommand("copy");
-        alert("Texte copié ! Vous pouvez le coller (Ctrl + V) dans votre e-mail.");
+        alert("Texte copié ! Vous pouvez le coller directement (Ctrl + V) dans votre e-mail.");
     }
 </script>
 </body>
