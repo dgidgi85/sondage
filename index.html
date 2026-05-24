@@ -3,27 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sondage Express Automatique</title>
+    <title>Sondage Express</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
         .container { max-width: 600px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: auto; }
-        h2, h3 { color: #007bff; text-align: center; margin-top: 0; }
+        h2, h3 { color: #007bff; text-align: center; }
         label { font-weight: bold; display: block; margin-top: 15px; margin-bottom: 5px; }
-        input[type="text"], input[type="date"], input[type="email"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
-        .btn { background: #007bff; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-size: 16px; cursor: pointer; margin-top: 20px; font-weight: bold; }
-        .btn:hover { background: #0056b3; }
-        .btn-add { background: #28a745; margin-top: 5px; padding: 8px; }
-        .date-item { background: #e9ecef; padding: 8px; margin-top: 5px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
-        .remove-btn { color: red; cursor: pointer; font-weight: bold; }
-        .option-check { background: #f8f9fa; padding: 12px; margin-bottom: 8px; border-radius: 6px; display: flex; align-items: center; cursor: pointer; border: 1px solid #e9ecef; }
-        .option-check input { margin-right: 12px; transform: scale(1.2); }
+        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; }
+        .btn { background: #007bff; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; }
+        .btn-add { background: #28a745; }
+        .date-item { background: #e9ecef; padding: 8px; margin-top: 5px; border-radius: 4px; display: flex; justify-content: space-between; }
         .hidden { display: none; }
-        .result-box { background: #e9ecef; padding: 15px; border-radius: 6px; margin-top: 20px; border: 2px dashed #007bff; }
-        textarea { width: 100%; height: 140px; margin-top: 10px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; font-size: 14px; box-sizing: border-box; resize: none; }
-        .table-section { margin-top: 25px; padding-top: 20px; border-top: 2px solid #eee; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; font-size: 14px; }
+        textarea { width: 100%; height: 100px; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; }
-        th { background-color: #f8f9fa; color: #495057; font-weight: bold; }
         .vibrant-oui { background-color: #d4edda; color: #155724; font-weight: bold; }
         .vibrant-non { background-color: #f8d7da; color: #721c24; }
     </style>
@@ -32,83 +25,60 @@
 
 <div class="container">
     <div id="view-create">
-        <h2>📊 Nouveau Sondage Simple</h2>
-        
-        <label for="organizer-email">Votre adresse e-mail (pour recevoir les réponses) :</label>
+        <h2>📊 Nouveau Sondage</h2>
+        <label>Votre e-mail :</label>
         <input type="email" id="organizer-email" placeholder="exemple@mail.com">
-
-        <label for="title">Quel est le titre de l'événement ?</label>
-        <input type="text" id="title" placeholder="Ex: Repas de famille, Grillade...">
-
-        <label>Proposer des dates :</label>
+        <label>Titre :</label>
+        <input type="text" id="title" placeholder="Ex: Repas">
+        <label>Choisir une date :</label>
         <input type="date" id="date-input">
-        <button class="btn btn-add" onclick="ajouterDate()">➕ Ajouter cette date</button>
+        <button class="btn btn-add" type="button" onclick="ajouterDate()">➕ Ajouter cette date</button>
         <div id="dates-list"></div>
-
-        <button class="btn" onclick="genererSondage()">Créer l'invitation</button>
-
-        <div id="result-zone-create" class="result-box hidden">
-            <strong style="color: #0056b3;">👇 Étape finale : Copiez ce texte pour votre mail :</strong>
+        <button class="btn" type="button" onclick="genererSondage()" style="margin-top:20px;">Créer l'invitation</button>
+        <div id="result-zone-create" class="hidden" style="margin-top:20px; border:2px dashed #007bff; padding:10px;">
+            <strong>Copiez ce texte :</strong>
             <textarea id="text-to-copy-create" readonly></textarea>
-            <button class="btn" style="background: #28a745; margin-top: 10px;" onclick="selectionnerEtCopier('text-to-copy-create')">👉 Copier le texte pour votre mail</button>
         </div>
     </div>
 
     <div id="view-vote" class="hidden">
         <h2 id="poll-title">Sondage</h2>
-        
-        <label for="voter-name">Votre Nom et Prénom :</label>
-        <input type="text" id="voter-name" placeholder="Ex: Marie Durant">
-
-        <label>Cochez vos disponibilités :</label>
+        <label>Votre Nom :</label>
+        <input type="text" id="voter-name" placeholder="Ex: Marie">
+        <label>Disponibilités :</label>
         <div id="options-container"></div>
-
-        <button id="submit-vote-btn" class="btn" style="background:#28a745;" onclick="envoyerVoteAutomatique()">📨 Envoyer ma réponse</button>
-
-        <div class="table-section">
-            <h3>📊 Réponses des participants</h3>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead><tr id="table-header"><th>Participants</th></tr></thead>
-                    <tbody id="table-body"></tbody>
-                </table>
-            </div>
+        <button id="submit-vote-btn" class="btn btn-add" type="button" onclick="envoyerVoteAutomatique()">📨 Envoyer</button>
+        <div style="margin-top:25px;">
+            <h3>📊 Réponses</h3>
+            <table id="table-global">
+                <thead><tr id="table-header"><th>Participants</th></tr></thead>
+                <tbody id="table-body"></tbody>
+            </table>
         </div>
     </div>
 </div>
 
 <script>
-    let datesSelectionnees = [];
-    let votesExistants = [];
-    const urlParams = new URLSearchParams(window.location.search);
-    const modeVote = urlParams.get('title'); 
+    var datesSelectionnees = [];
+    var votesExistants = [];
+    var urlParams = new URLSearchParams(window.location.search);
+    var modeVote = urlParams.get('title');
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', function() {
         if (modeVote) {
             document.getElementById('view-create').classList.add('hidden');
             document.getElementById('view-vote').classList.remove('hidden');
             document.getElementById('poll-title').innerText = "Sondage : " + urlParams.get('title');
-            
-            const datesParam = urlParams.get('dates');
+            var datesParam = urlParams.get('dates');
             if (datesParam) {
-                const datesUrl = datesParam.split(',').filter(d => d.trim() !== "");
-                const container = document.getElementById('options-container');
+                var datesUrl = datesParam.split(',').filter(function(d) { return d.trim() !== ""; });
+                var container = document.getElementById('options-container');
                 container.innerHTML = "";
-                
-                if (datesUrl.length === 0) {
-                    container.innerHTML = "<p style='color:red;'>⚠️ Aucune date valide n'a été trouvée.</p>";
-                } else {
-                    datesUrl.forEach(date => {
-                        container.innerHTML += `
-                            <label class="option-check">
-                                <input type="checkbox" name="dates-choices" value="${date}">
-                                <span>${date}</span>
-                            </label>`;
-                    });
-                }
-
-                const votesUrl = urlParams.get('votes');
-                if (votesUrl) { 
+                datesUrl.forEach(function(date) {
+                    container.innerHTML += '<label style="display:block; margin-bottom:10px;"><input type="checkbox" name="dates-choices" value="'+date+'" style="width:auto; margin-right:10px;">' + date + '</label>';
+                });
+                var votesUrl = urlParams.get('votes');
+                if (votesUrl) {
                     try { votesExistants = JSON.parse(decodeURIComponent(votesUrl)); } catch(e) { votesExistants = []; }
                 }
                 construireTableau(datesUrl);
@@ -117,10 +87,10 @@
     });
 
     function ajouterDate() {
-        const dateInput = document.getElementById('date-input');
+        var dateInput = document.getElementById('date-input');
         if (!dateInput.value) return;
-        const dateObj = new Date(dateInput.value);
-        const dateFormatee = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+        var dateObj = new Date(dateInput.value);
+        var dateFormatee = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
         if (!datesSelectionnees.includes(dateFormatee)) {
             datesSelectionnees.push(dateFormatee);
             afficherDates();
@@ -129,10 +99,10 @@
     }
 
     function afficherDates() {
-        const list = document.getElementById('dates-list');
+        var list = document.getElementById('dates-list');
         list.innerHTML = "";
-        datesSelectionnees.forEach((date, index) => {
-            list.innerHTML += `<div class="date-item"><span>📅 ${date}</span><span class="remove-btn" onclick="supprimerDate(${index})">❌</span></div>`;
+        datesSelectionnees.forEach(function(date, index) {
+            list.innerHTML += '<div class="date-item"><span>📅 ' + date + '</span><span style="color:red; cursor:pointer;" onclick="supprimerDate(' + index + ')">❌</span></div>';
         });
     }
 
@@ -142,117 +112,75 @@
     }
 
     function genererSondage() {
-        const emailOrganisatrice = document.getElementById('organizer-email').value.trim();
-        const titre = document.getElementById('title').value.trim();
-        const dateInput = document.getElementById('date-input');
-
-        if (datesSelectionnees.length === 0 && dateInput && dateInput.value) {
-            const dateObj = new Date(dateInput.value);
-            const dateFormatee = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-            datesSelectionnees.push(dateFormatee);
-        }
-
-        if (!emailOrganisatrice || !titre || datesSelectionnees.length === 0) {
-            alert("Veuillez remplir tous les champs et indiquer au moins une date !"); 
+        var email = document.getElementById('organizer-email').value.trim();
+        var titre = document.getElementById('title').value.trim();
+        if (!email || !titre || datesSelectionnees.length === 0) {
+            alert("Veuillez remplir les champs et ajouter des dates !");
             return;
         }
-        
-        const lienVote = window.location.origin + window.location.pathname 
+        var lienVote = window.location.origin + window.location.pathname 
             + "?title=" + encodeURIComponent(titre) 
-            + "&to=" + encodeURIComponent(emailOrganisatrice) 
+            + "&to=" + encodeURIComponent(email) 
             + "&dates=" + encodeURIComponent(datesSelectionnees.join(','));
-
-        const corps = `Bonjour,\n\nMerci de cocher vos disponibilités pour l'événement "${titre}" en cliquant sur le lien ci-dessous :\n\n👉 ${lienVote}\n\nÀ bientôt !`;
-        
+        var corps = "Bonjour,\n\n Votez ici : " + lienVote;
         document.getElementById('text-to-copy-create').value = corps;
         document.getElementById('result-zone-create').classList.remove('hidden');
     }
 
     function construireTableau(datesUrl) {
-        const headerRow = document.getElementById('table-header');
+        var headerRow = document.getElementById('table-header');
         headerRow.innerHTML = "<th>Participants</th>";
-        datesUrl.forEach(date => { headerRow.innerHTML += `<th>${date}</th>`; });
-        const tbody = document.getElementById('table-body');
+        datesUrl.forEach(function(date) { headerRow.innerHTML += "<th>" + date + "</th>"; });
+        var tbody = document.getElementById('table-body');
         tbody.innerHTML = "";
         if (votesExistants.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="${datesUrl.length + 1}" style="color:#888;">Aucune réponse pour le moment.</td></tr>`; 
+            tbody.innerHTML = '<tr><td colspan="' + (datesUrl.length + 1) + '" style="color:#888;">Aucune réponse.</td></tr>';
             return;
         }
-        votesExistants.forEach(v => {
-            let ligne = `<tr><td style="font-weight:bold; text-align:left;">👤 ${v.nom}</td>`;
-            datesUrl.forEach(date => {
-                ligne += v.choix.includes(date) ? `<td class="vibrant-oui">OUI</td>` : `<td class="vibrant-non">NON</td>`;
+        votesExistants.forEach(function(v) {
+            var ligne = '<tr><td style="font-weight:bold;">👤 ' + v.nom + '</td>';
+            datesUrl.forEach(function(date) {
+                ligne += v.choix.includes(date) ? '<td class="vibrant-oui">OUI</td>' : '<td class="vibrant-non">NON</td>';
             });
-            ligne += `</tr>`; 
+            ligne += '</tr>';
             tbody.innerHTML += ligne;
         });
     }
 
     function envoyerVoteAutomatique() {
-        const nom = document.getElementById('voter-name').value.trim();
-        if (!nom) { alert("Veuillez entrer votre nom."); return; }
+        var nom = document.getElementById('voter-name').value.trim();
+        if (!nom) { alert("Nom requis."); return; }
+        var checkboxes = document.querySelectorAll('input[name="dates-choices"]:checked');
+        var mesChoix = Array.from(checkboxes).map(function(cb) { return cb.value; });
+        var mailDestinataire = urlParams.get('to');
+        var titreSondage = urlParams.get('title');
+        var datesParam = urlParams.get('dates');
+        var datesUrl = datesParam.split(',').filter(function(d) { return d.trim() !== ""; });
 
-        const btn = document.getElementById('submit-vote-btn');
-        btn.innerText = "⏳ Envoi en cours...";
-        btn.disabled = true;
+        var nouvelleParticipation = { nom: nom, choix: mesChoix };
+        votesExistants.push(nouvelleParticipation);
 
-        const checkboxes = document.querySelectorAll('input[name="dates-choices"]:checked');
-        const mesChoix = Array.from(checkboxes).map(cb => cb.value);
-        const titreSondage = urlParams.get('title');
-        const datesParam = urlParams.get('dates');
-        const datesUrl = datesParam.split(',').filter(d => d.trim() !== "");
-        const mailDestinataire = urlParams.get('to');
-
-        const nouvelleParticipation = { nom: nom, choix: mesChoix };
-        const copieVotes = [...votesExistants, nouvelleParticipation];
-
-        const lienMisAJour = window.location.origin + window.location.pathname 
+        var lienMisAJour = window.location.origin + window.location.pathname 
             + "?title=" + encodeURIComponent(titreSondage) 
             + "&to=" + encodeURIComponent(mailDestinataire)
             + "&dates=" + encodeURIComponent(datesParam)
-            + "&votes=" + encodeURIComponent(JSON.stringify(copieVotes));
+            + "&votes=" + encodeURIComponent(JSON.stringify(votesExistants));
 
-        let texteChoix = mesChoix.length > 0 
-            ? "Disponible le : " + mesChoix.join(', ')
-            : "❌ Indisponible à toutes les dates.";
-
-        fetch(`https://formsubmit.co/ajax/${mailDestinataire}`, {
+        fetch('https://formsubmit.co/ajax/' + mailDestinataire, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify({
                 "Événement": titreSondage,
                 "Nom": nom,
-                "Disponibilités": texteChoix,
-                "LIEN DU TABLEAU INTERACTIF": lienMisAJour,
-                "_subject": `📥 Nouveau Vote : ${nom} - ${titreSondage}`
+                "Disponibilités": mesChoix.join(', '),
+                "LIEN DU TABLEAU": lienMisAJour
             })
-        })
-        .then(response => {
-            btn.innerText = "📨 Envoyer ma réponse";
-            btn.disabled = false;
-            
-            if (response.ok) {
-                alert("🎉 Réponse enregistrée ! Votre choix a été envoyé directement en arrière-plan à l'organisatrice.");
-                votesExistants.push(nouvelleParticipation);
-                construireTableau(datesUrl);
-                document.getElementById('voter-name').value = "";
-                checkboxes.forEach(cb => cb.checked = false);
-            } else {
-                alert("Erreur lors de l'envoi automatique.");
-            }
-        })
-        .catch(() => {
-            btn.innerText = "📨 Envoyer ma réponse";
-            btn.disabled = false;
-            alert("Erreur réseau. Impossible d'envoyer.");
+        }).then(function() {
+            alert("Réponse envoyée !");
+            construireTableau(datesUrl);
+            document.getElementById('voter-name').value = "";
+            checkboxes.forEach(function(cb) { cb.checked = false; });
         });
-    }
-
-    window.selectionnerEtCopier = function(idChamp) {
-        const champ = document.getElementById(idChamp);
-        champ.select();
-        document.execCommand("copy");
-        alert("Texte copié ! Vous pouvez le coller (Ctrl + V) dans Outlook ou Gmail.");
     }
 </script>
 </body>
