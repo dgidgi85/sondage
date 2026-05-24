@@ -146,7 +146,6 @@
         const titre = document.getElementById('title').value.trim();
         const dateInput = document.getElementById('date-input');
 
-        // Sécurité anti-oubli du bouton "+"
         if (datesSelectionnees.length === 0 && dateInput && dateInput.value) {
             const dateObj = new Date(dateInput.value);
             const dateFormatee = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -154,7 +153,7 @@
         }
 
         if (!emailOrganisatrice || !titre || datesSelectionnees.length === 0) {
-            alert("Veuillez remplir les champs et indiquer au moins une date !"); 
+            alert("Veuillez remplir tous les champs et indiquer au moins une date !"); 
             return;
         }
         
@@ -167,7 +166,6 @@
         
         document.getElementById('text-to-copy-create').value = corps;
         document.getElementById('result-zone-create').classList.remove('hidden');
-        alert("L'invitation est prête en bas ! Cliquez sur le bouton vert pour copier le texte.");
     }
 
     function construireTableau(datesUrl) {
@@ -218,16 +216,15 @@
             ? "Disponible le : " + mesChoix.join(', ')
             : "❌ Indisponible à toutes les dates.";
 
-        // Envoi en tâche de fond 100% invisible via FormSubmit
         fetch(`https://formsubmit.co/ajax/${mailDestinataire}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify({
                 "Événement": titreSondage,
                 "Nom": nom,
-                "Disponibilités": texteChoix,
+                "Disponibilités": textChoix = texteChoix,
                 "LIEN DU TABLEAU INTERACTIF": lienMisAJour,
-                "_subject": `📥 Nouveau Vote : ${nom} - ${tit Sondage}`
+                "_subject": `📥 Nouveau Vote : ${nom} - ${titreSondage}`
             })
         })
         .then(response => {
