@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sondage Express PC & Tableau</title>
+    <title>Sondage Express PC Multi-Utilisateurs</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
         .container { max-width: 600px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: auto; }
@@ -18,12 +18,8 @@
         .option-check { background: #f8f9fa; padding: 12px; margin-bottom: 8px; border-radius: 6px; display: flex; align-items: center; cursor: pointer; border: 1px solid #e9ecef; }
         .option-check input { margin-right: 12px; transform: scale(1.2); }
         .hidden { display: none; }
-        
-        /* Styles pour la zone PC Copier/Coller */
         .result-box { background: #e9ecef; padding: 15px; border-radius: 6px; margin-top: 20px; border: 2px dashed #007bff; }
         textarea { width: 100%; height: 130px; margin-top: 10px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; font-size: 14px; box-sizing: border-box; resize: none; }
-        
-        /* Styles du Tableau de Réponses style Doodle */
         .table-section { margin-top: 25px; padding-top: 20px; border-top: 2px solid #eee; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; font-size: 14px; }
         th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; }
@@ -35,7 +31,6 @@
 <body>
 
 <div class="container">
-    <!-- ÉCRAN 1 : L'ORGANISATRICE CRÉE LE SONDAGE -->
     <div id="view-create">
         <h2>📊 Nouveau Sondage Simple</h2>
         
@@ -52,48 +47,33 @@
 
         <button class="btn" onclick="genererSondage()">1. Créer l'invitation</button>
 
-        <!-- Zone de copie PC pour l'organisatrice -->
         <div id="result-zone-create" class="result-box hidden">
             <strong style="color: #0056b3;">👇 Étape finale : Copiez ce texte pour votre mail :</strong>
             <textarea id="text-to-copy-create" readonly></textarea>
             <button class="btn" style="background: #28a745; margin-top: 10px;" onclick="selectionnerEtCopier('text-to-copy-create')">👉 Sélectionner et copier le texte</button>
-            <p style="font-size: 13px; color: #666; margin-top: 5px; text-align: center;">Collez-le ensuite dans un nouveau message sur Gmail ou Outlook.</p>
+            <p style="font-size: 13px; color: #666; margin-top: 5px; text-align: center;">Collez-le ensuite dans Gmail ou Outlook pour l'envoyer à vos invités.</p>
         </div>
     </div>
 
-    <!-- ÉCRAN 2 : LES INVITÉS RÉPONDENT -->
     <div id="view-vote" class="hidden">
         <h2 id="poll-title">Sondage</h2>
         
-        <label for="voter-name">Votre Nom et Prénom :</label>
-        <input type="text" id="voter-name" placeholder="Ex: Marie Durant">
+        <form id="form-vote-auto">
+            <label for="voter-name">Votre Nom et Prénom :</label>
+            <input type="text" id="voter-name" placeholder="Ex: Marie Durant" required>
 
-        <label>Cochez vos disponibilités :</label>
-        <div id="options-container"></div>
-        
-        <button class="btn" style="background:#28a745;" onclick="envoyerReponseParMail()">1. Générer ma réponse</button>
+            <label>Cochez vos disponibilités :</label>
+            <div id="options-container"></div>
 
-        <!-- Zone de copie PC pour l'invité -->
-        <div id="result-zone-vote" class="result-box hidden">
-            <strong style="color: #155724;">👇 Étape finale : Copiez votre réponse :</strong>
-            <textarea id="text-to-copy-vote" readonly></textarea>
-            <button class="btn" style="background: #28a745; margin-top: 10px;" onclick="selectionnerEtCopier('text-to-copy-vote')">👉 Sélectionner et copier ma réponse</button>
-            <p style="font-size: 13px; color: #666; margin-top: 5px; text-align: center;">Répondez au mail de l'organisatrice en collant ce texte.</p>
-        </div>
+            <button type="submit" class="btn" style="background:#28a745;">📨 Envoyer ma réponse</button>
+        </form>
 
-        <!-- LE TABLEAU DES RÉPONSES INCLUS -->
         <div class="table-section">
             <h3>📊 Réponses des participants</h3>
             <div style="overflow-x: auto;">
                 <table>
-                    <thead>
-                        <tr id="table-header">
-                            <th>Participants</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body">
-                        <!-- Les lignes de réponses vont s'afficher ici -->
-                    </tbody>
+                    <thead><tr id="table-header"><th>Participants</th></tr></thead>
+                    <tbody id="table-body"></tbody>
                 </table>
             </div>
         </div>
@@ -106,12 +86,10 @@
     const urlParams = new URLSearchParams(window.location.search);
     const modeVote = urlParams.get('title'); 
 
-    // Détection du mode au chargement
     window.addEventListener('DOMContentLoaded', () => {
         if (modeVote) {
             document.getElementById('view-create').classList.add('hidden');
             document.getElementById('view-vote').classList.remove('hidden');
-            
             document.getElementById('poll-title').innerText = "Sondage : " + urlParams.get('title');
             
             const datesUrl = urlParams.get('dates').split(',');
@@ -124,13 +102,8 @@
                     </label>`;
             });
 
-            // Charger les votes existants s'il y en a dans l'URL
             const votesUrl = urlParams.get('votes');
-            if (votesUrl) {
-                votesExistants = JSON.parse(decodeURIComponent(votesUrl));
-            }
-
-            // Construire le tableau de résultats
+            if (votesUrl) { votesExistants = JSON.parse(decodeURIComponent(votesUrl)); }
             construireTableau(datesUrl);
         }
     });
@@ -140,7 +113,6 @@
         if (!dateInput.value) return;
         const dateObj = new Date(dateInput.value);
         const dateFormatee = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-        
         if (!datesSelectionnees.includes(dateFormatee)) {
             datesSelectionnees.push(dateFormatee);
             afficherDates();
@@ -161,106 +133,92 @@
         afficherDates();
     }
 
-    // Génération de l'invitation adaptée PC
     function genererSondage() {
-        const email = document.getElementById('organizer-email').value.trim();
+        const emailOrganisatrice = document.getElementById('organizer-email').value.trim();
         const titre = document.getElementById('title').value.trim();
-        if (!email || !titre || datesSelectionnees.length === 0) {
-            alert("Veuillez remplir tous les champs et ajouter des dates !");
-            return;
+        if (!emailOrganisatrice || !titre || datesSelectionnees.length === 0) {
+            alert("Veuillez remplir tous les champs !"); return;
         }
-
+        
+        // On cache le mail de l'organisatrice DIRECTEMENT dans le lien magique transmis aux invités
         const lienVote = window.location.origin + window.location.pathname 
             + "?title=" + encodeURIComponent(titre) 
-            + "&to=" + encodeURIComponent(email) 
+            + "&to=" + encodeURIComponent(emailOrganisatrice) 
             + "&dates=" + encodeURIComponent(datesSelectionnees.join(','));
 
         const corps = `Bonjour,\n\nMerci de cocher vos disponibilités pour l'événement "${titre}" en cliquant sur le lien ci-dessous :\n\n👉 ${lienVote}\n\nÀ bientôt !`;
-        
         document.getElementById('text-to-copy-create').value = corps;
         document.getElementById('result-zone-create').classList.remove('hidden');
-        
-        // Tente d'ouvrir le logiciel de messagerie si configuré, sinon la zone texte prend le relais
-        try { window.location.href = `mailto:?subject=${encodeURIComponent("Invitation : " + titre)}&body=${encodeURIComponent(corps)}`; } catch(e){}
     }
 
-    // Gestion du tableau
     function construireTableau(datesUrl) {
         const headerRow = document.getElementById('table-header');
         headerRow.innerHTML = "<th>Participants</th>";
-        datesUrl.forEach(date => {
-            headerRow.innerHTML += `<th>${date}</th>`;
-        });
-
+        datesUrl.forEach(date => { headerRow.innerHTML += `<th>${date}</th>`; });
         const tbody = document.getElementById('table-body');
         tbody.innerHTML = "";
-
         if (votesExistants.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="${datesUrl.length + 1}" style="color:#888;">Aucune réponse pour le moment.</td></tr>`;
-            return;
+            tbody.innerHTML = `<tr><td colspan="${datesUrl.length + 1}" style="color:#888;">Aucune réponse pour le moment.</td></tr>`; return;
         }
-
         votesExistants.forEach(v => {
             let ligne = `<tr><td style="font-weight:bold; text-align:left;">👤 ${v.nom}</td>`;
             datesUrl.forEach(date => {
-                if (v.choix.includes(date)) {
-                    ligne += `<td class="vibrant-oui">OUI</td>`;
-                } else {
-                    ligne += `<td class="vibrant-non">NON</td>`;
-                }
+                ligne += v.choix.includes(date) ? `<td class="vibrant-oui">OUI</td>` : `<td class="vibrant-non">NON</td>`;
             });
-            ligne += `</tr>`;
-            tbody.innerHTML += ligne;
+            ligne += `</tr>`; tbody.innerHTML += ligne;
         });
     }
 
-    // Validation et génération de la réponse pour l'invité
-    function envoyerReponseParMail() {
+    document.getElementById('form-vote-auto').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
         const nom = document.getElementById('voter-name').value.trim();
-        if (!nom) {
-            alert("Veuillez entrer votre nom.");
-            return;
-        }
-
         const checkboxes = document.querySelectorAll('input[name="dates-choices"]:checked');
         const mesChoix = Array.from(checkboxes).map(cb => cb.value);
-        
-        const mailOrganisatrice = urlParams.get('to');
         const titreSondage = urlParams.get('title');
         const datesUrl = urlParams.get('dates');
+        const mailDestinataire = urlParams.get('to'); // On récupère dynamiquement le mail lié à CE sondage
 
-        // On ajoute la nouvelle réponse locale dans la liste globale
         const nouvelleParticipation = { nom: nom, choix: mesChoix };
         const copieVotes = [...votesExistants, nouvelleParticipation];
 
-        // On génère un NOUVEAU LIEN mis à jour qui contient le tableau complet enrichi
         const lienMisAJour = window.location.origin + window.location.pathname 
             + "?title=" + encodeURIComponent(titreSondage) 
-            + "&to=" + encodeURIComponent(mailOrganisatrice) 
+            + "&to=" + encodeURIComponent(mailDestinataire)
             + "&dates=" + encodeURIComponent(datesUrl)
             + "&votes=" + encodeURIComponent(JSON.stringify(copieVotes));
 
-        let texteChoix = mesChoix.length > 0 
-            ? "Je suis disponible aux dates suivantes :\n" + mesChoix.map(d => `✅ ${d}`).join('\n')
-            : "❌ Je ne suis disponible à aucune des dates proposées.";
-            
-        const corpsReponse = `Bonjour,\n\nVoici mes disponibilités pour "${titreSondage}" :\n\n👤 Nom : ${nom}\n\n${texteChoix}\n\n⚠️ IMPORTANT : Pour que mon vote s'ajoute au tableau général, cliquez sur ce lien de mise à jour :\n👉 ${lienMisAJour}`;
+        // Utilisation du service FormSubmit avec le mail dynamique extrait de l'URL
+        const endpointFormSubmit = `https://formsubmit.co/ajax/${mailDestinataire}`;
 
-        document.getElementById('text-to-copy-vote').value = corpsReponse;
-        document.getElementById('result-zone-vote').classList.remove('hidden');
+        fetch(endpointFormSubmit, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({
+                "Événement": titreSondage,
+                "Nom du Participant": nom,
+                "Ses Disponibilités": mesChoix.length > 0 ? mesChoix.join(', ') : "Aucune date cochée",
+                "LIEN DU TABLEAU MIS A JOUR": lienMisAJour,
+                "_subject": `Réponse Sondage : ${nom} - ${titreSondage}` // Sujet personnalisé du mail reçu
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                alert("🎉 Merci ! Votre réponse a été envoyée automatiquement.");
+                votesExistants.push(nouvelleParticipation);
+                construireTableau(datesUrl.split(','));
+            } else {
+                alert("Erreur lors de l'envoi.");
+            }
+        });
+    });
 
-        try { window.location.href = `mailto:${mailOrganisatrice}?subject=${encodeURIComponent(`Réponse de ${nom} - ${titreSondage}`)}&body=${encodeURIComponent(corpsReponse)}`; } catch(e){}
-    }
-
-    // Fonction universelle PC de sélection et copie
     window.selectionnerEtCopier = function(idChamp) {
         const champ = document.getElementById(idChamp);
         champ.select();
-        champ.setSelectionRange(0, 99999);
         document.execCommand("copy");
-        alert("Texte copié avec succès ! Vous pouvez maintenant le coller (Ctrl + V) dans votre e-mail.");
+        alert("Texte copié ! Vous pouvez le coller (Ctrl + V) dans votre e-mail.");
     }
 </script>
-
 </body>
 </html>
