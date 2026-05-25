@@ -14,7 +14,7 @@
         .btn-add { background: #28a745; }
         .date-item { background: #e9ecef; padding: 8px; margin-top: 5px; border-radius: 4px; display: flex; justify-content: space-between; }
         .hidden { display: none; }
-        textarea { width: 100%; height: 100px; margin-top: 10px; }
+        textarea { width: 100%; height: 80px; margin-top: 10px; margin-bottom: 10px; width: 100%; box-sizing: border-box; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; }
         .vibrant-oui { background-color: #d4edda; color: #155724; font-weight: bold; }
@@ -26,30 +26,46 @@
 <div class="container">
     <div id="view-create">
         <h2>📊 Nouveau Sondage</h2>
-        <label>Votre e-mail :</label>
-        <input type="email" id="organizer-email" placeholder="exemple@mail.com">
-        <label>Titre :</label>
-        <input type="text" id="title" placeholder="Ex: Repas">
+        
+        <label>Titre de l'événement :</label>
+        <input type="text" id="title" placeholder="Ex: Repas de famille, Anniversaire...">
+        
         <label>Choisir une date :</label>
         <input type="date" id="date-input">
         <button class="btn btn-add" type="button" onclick="ajouterDate()">➕ Ajouter cette date</button>
-        <div id="dates-list"></div>
-        <button class="btn" type="button" onclick="genererSondage()" style="margin-top:20px;">Créer l'invitation</button>
-        <div id="result-zone-create" class="hidden" style="margin-top:20px; border:2px dashed #007bff; padding:10px;">
-            <strong>Copiez ce texte :</strong>
+        
+        <div id="dates-list" style="margin-top: 10px; margin-bottom: 20px;"></div>
+        
+        <button class="btn" type="button" onclick="genererSondage()">Créer l'invitation</button>
+        
+        <div id="result-zone-create" class="hidden" style="margin-top:20px; border:2px dashed #28a745; padding:15px; background: #f8f9fa;">
+            <strong style="color: #28a745;">✅ Votre sondage est prêt !</strong>
+            <p style="margin: 5px 0; font-size: 14px;">Copiez le texte ci-dessous pour l'envoyer à vos invités :</p>
             <textarea id="text-to-copy-create" readonly></textarea>
+            <button class="btn btn-add" type="button" onclick="copierTexte()">📋 Copier le texte et le lien</button>
         </div>
     </div>
 
     <div id="view-vote" class="hidden">
         <h2 id="poll-title">Sondage</h2>
-        <label>Votre Nom :</label>
-        <input type="text" id="voter-name" placeholder="Ex: Marie">
-        <label>Disponibilités :</label>
-        <div id="options-container"></div>
-        <button id="submit-vote-btn" class="btn btn-add" type="button" onclick="envoyerVoteAutomatique()">📨 Envoyer ma réponse</button>
+        
+        <label>Votre Nom et Prénom :</label>
+        <input type="text" id="voter-name" placeholder="Ex: Marie Durant">
+        
+        <label>Cochez vos disponibilités :</label>
+        <div id="options-container" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px;"></div>
+        
+        <button id="submit-vote-btn" class="btn btn-add" type="button" onclick="enregistrerVoteLocalement()">💾 Valider ma réponse</button>
+        
+        <div id="result-zone-vote" class="hidden" style="margin-top:20px; border:2px dashed #007bff; padding:15px; background: #e3f2fd;">
+            <strong style="color: #007bff;">👉 Étape importante pour enregistrer :</strong>
+            <p style="margin: 5px 0; font-size: 14px;">Pour que les autres voient votre réponse, copiez ce nouveau lien mis à jour et renvoyez-le au groupe :</p>
+            <textarea id="text-to-copy-vote" readonly></textarea>
+            <button class="btn" type="button" onclick="copierTexteVote()">📋 Copier le nouveau lien</button>
+        </div>
+
         <div style="margin-top:25px;">
-            <h3>📊 Réponses</h3>
+            <h3>📊 Réponses des participants</h3>
             <table id="table-global">
                 <thead><tr id="table-header"><th>Participants</th></tr></thead>
                 <tbody id="table-body"></tbody>
@@ -69,14 +85,16 @@
             document.getElementById('view-create').classList.add('hidden');
             document.getElementById('view-vote').classList.remove('hidden');
             document.getElementById('poll-title').innerText = "Sondage : " + urlParams.get('title');
+            
             var datesParam = urlParams.get('dates');
             if (datesParam) {
                 var datesUrl = datesParam.split(',').filter(function(d) { return d.trim() !== ""; });
                 var container = document.getElementById('options-container');
                 container.innerHTML = "";
                 datesUrl.forEach(function(date) {
-                    container.innerHTML += '<label style="display:block; margin-bottom:10px; cursor:pointer;"><input type="checkbox" name="dates-choices" value="'+date+'" style="width:auto; margin-right:10px;">' + date + '</label>';
+                    container.innerHTML += '<label style="display:block; margin-bottom:10px; cursor:pointer; font-weight: normal;"><input type="checkbox" name="dates-choices" value="'+date+'" style="width:auto; margin-right:10px;">' + date + '</label>';
                 });
+                
                 var votesUrl = urlParams.get('votes');
                 if (votesUrl) {
                     try { votesExistants = JSON.parse(decodeURIComponent(votesUrl)); } catch(e) { votesExistants = []; }
@@ -102,7 +120,7 @@
         var list = document.getElementById('dates-list');
         list.innerHTML = "";
         datesSelectionnees.forEach(function(date, index) {
-            list.innerHTML += '<div class="date-item"><span>📅 ' + date + '</span><span style="color:red; cursor:pointer;" onclick="supprimerDate(' + index + ')">❌</span></div>';
+            list.innerHTML += '<div class="date-item"><span>📅 ' + date + '</span><span style="color:red; cursor:pointer; font-weight:bold;" onclick="supprimerDate(' + index + ')">❌</span></div>';
         });
     }
 
@@ -112,29 +130,37 @@
     }
 
     function genererSondage() {
-        var email = document.getElementById('organizer-email').value.trim();
         var titre = document.getElementById('title').value.trim();
-        if (!email || !titre || datesSelectionnees.length === 0) {
-            alert("Veuillez remplir les champs et ajouter des dates !");
+        if (!titre || datesSelectionnees.length === 0) {
+            alert("Veuillez donner un titre et ajouter au moins une date !");
             return;
         }
         var lienVote = window.location.origin + window.location.pathname 
             + "?title=" + encodeURIComponent(titre) 
-            + "&to=" + encodeURIComponent(email) 
             + "&dates=" + encodeURIComponent(datesSelectionnees.join(','));
-        var corps = "Bonjour,\n\n Votez ici : " + lienVote;
+        
+        var corps = "Bonjour, voici un sondage pour : " + titre + ".\nCliquez sur le lien pour voter : " + lienVote;
         document.getElementById('text-to-copy-create').value = corps;
         document.getElementById('result-zone-create').classList.remove('hidden');
+    }
+
+    function copierTexte() {
+        var t = document.getElementById('text-to-copy-create');
+        t.select();
+        t.setSelectionRange(0, 99999);
+        document.execCommand("copy");
+        alert("Lien et texte copiés ! Vous pouvez les coller dans un message ou un e-mail.");
     }
 
     function construireTableau(datesUrl) {
         var headerRow = document.getElementById('table-header');
         headerRow.innerHTML = "<th>Participants</th>";
         datesUrl.forEach(function(date) { headerRow.innerHTML += "<th>" + date + "</th>"; });
+        
         var tbody = document.getElementById('table-body');
         tbody.innerHTML = "";
         if (votesExistants.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="' + (datesUrl.length + 1) + '" style="color:#888;">Aucune réponse pour le moment.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="' + (datesUrl.length + 1) + '" style="color:#888; padding: 15px;">Aucune réponse pour le moment.</td></tr>';
             return;
         }
         votesExistants.forEach(function(v) {
@@ -151,63 +177,45 @@
         });
     }
 
-    function envoyerVoteAutomatique() {
+    function enregistrerVoteLocalement() {
         var nom = document.getElementById('voter-name').value.trim();
         if (!nom) { alert("Veuillez entrer votre nom."); return; }
         
         var checkboxes = document.querySelectorAll('input[name="dates-choices"]');
         var mesChoix = [];
         checkboxes.forEach(function(cb) {
-            if (cb.checked) {
-                mesChoix.push(cb.value);
-            }
+            if (cb.checked) { mesChoix.push(cb.value); }
         });
 
-        var mailDestinataire = urlParams.get('to');
         var titreSondage = urlParams.get('title');
         var datesParam = urlParams.get('dates');
         var datesUrl = datesParam.split(',').filter(function(d) { return d.trim() !== ""; });
 
+        // Ajouter le nouveau vote dans la liste
         var nouvelleParticipation = { nom: nom, choix: mesChoix };
         votesExistants.push(nouvelleParticipation);
 
+        // Mettre à jour le tableau immédiatement à l'écran
+        construireTableau(datesUrl);
+
+        // Générer le nouveau lien qui contient TOUS les votes accumulés
         var lienMisAJour = window.location.origin + window.location.pathname 
             + "?title=" + encodeURIComponent(titreSondage) 
-            + "&to=" + encodeURIComponent(mailDestinataire)
             + "&dates=" + encodeURIComponent(datesParam)
             + "&votes=" + encodeURIComponent(JSON.stringify(votesExistants));
 
-        var texteChoix = mesChoix.length > 0 ? "Disponible le : " + mesChoix.join(', ') : "❌ Indisponible à toutes les dates.";
+        document.getElementById('text-to-copy-vote').value = lienMisAJour;
+        document.getElementById('result-zone-vote').classList.remove('hidden');
+        
+        alert("Prénom ajouté au tableau ! Pensez à copier le nouveau lien généré en bas.");
+    }
 
-        var btn = document.getElementById('submit-vote-btn');
-        btn.innerText = "⏳ Envoi en cours...";
-        btn.disabled = true;
-
-        fetch('https://formsubmit.co/ajax/' + mailDestinataire, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({
-                "Événement": titreSondage,
-                "Nom": nom,
-                "Disponibilités": texteChoix,
-                "LIEN DU TABLEAU": lienMisAJour
-            })
-        }).then(function(res) {
-            btn.innerText = "📨 Envoyer ma réponse";
-            btn.disabled = false;
-            if(res.ok) {
-                alert("🎉 Réponse enregistrée !");
-                construireTableau(datesUrl);
-                document.getElementById('voter-name').value = "";
-                checkboxes.forEach(function(cb) { cb.checked = false; });
-            } else {
-                alert("Erreur lors de l'envoi.");
-            }
-        }).catch(function() {
-            btn.innerText = "📨 Envoyer ma réponse";
-            btn.disabled = false;
-            alert("Erreur réseau.");
-        });
+    function copierTexteVote() {
+        var t = document.getElementById('text-to-copy-vote');
+        t.select();
+        t.setSelectionRange(0, 99999);
+        document.execCommand("copy");
+        alert("Nouveau lien copié ! Transmettez-le à la personne suivante pour qu'elle vote à son tour.");
     }
 </script>
 </body>
