@@ -1,80 +1,84 @@
-const dates = [];
-const params = new URLSearchParams(window.location.search);
-const pollId = params.get("id");
+var datesSelectionnees = [];
 
-const GITHUB_JSON = "https://raw.githubusercontent.com/dgidgi85/sondage/main/data/sondages.json";
+var urlParams = new URLSearchParams(window.location.search);
+var pollID = urlParams.get('id');
 
-window.onload = () => {
+window.addEventListener('DOMContentLoaded', function() {
 
-  if (pollId) {
-    afficherVote();
-  }
+    if (pollID) {
 
-};
+        document.getElementById('view-create').classList.add('hidden');
+        document.getElementById('view-vote').classList.remove('hidden');
+
+        document.getElementById('poll-title').innerText =
+            decodeURIComponent(urlParams.get('title'));
+
+        var datesParam = urlParams.get('dates');
+
+        var dates = JSON.parse(decodeURIComponent(datesParam));
+
+        afficherChoixDates(dates);
+
+        construireTableau(dates);
+    }
+
+});
 
 function ajouterDate() {
 
-  const input = document.getElementById("dateInput");
+    var input = document.getElementById('date-input');
 
-  if (!input.value) return;
+    if (!input.value) {
+        alert('Choisis une date');
+        return;
+    }
 
-  const d = new Date(input.value);
+    var dateObj = new Date(input.value);
 
-  const dateTexte = d.toLocaleDateString("fr-FR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long"
-  });
+    var dateFormatee = dateObj.toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long'
+    });
 
-  if (!dates.includes(dateTexte)) {
-    dates.push(dateTexte);
-  }
+    if (!datesSelectionnees.includes(dateFormatee)) {
 
-  afficherDates();
+        datesSelectionnees.push(dateFormatee);
 
-  input.value = "";
+        afficherDates();
+    }
+
+    input.value = '';
 }
 
 function afficherDates() {
 
-  const zone = document.getElementById("datesList");
+    var zone = document.getElementById('dates-list');
 
-  zone.innerHTML = "";
+    zone.innerHTML = '';
 
-  dates.forEach((date, index) => {
+    datesSelectionnees.forEach(function(date, index) {
 
-    zone.innerHTML += `
-      <div class="dateItem">
-        <span>${date}</span>
-        <span onclick="supprimerDate(${index})">❌</span>
-      </div>
-    `;
+        zone.innerHTML += `
+            <div class="date-item">
+                <span>📅 ${date}</span>
+                <span class="delete-date" onclick="supprimerDate(${index})">
+                    ❌
+                </span>
+            </div>
+        `;
 
-  });
+    });
 }
 
 function supprimerDate(index) {
 
-  dates.splice(index, 1);
+    datesSelectionnees.splice(index, 1);
 
-  afficherDates();
+    afficherDates();
 }
 
-function creerSondage() {
+function genererSondage() {
 
-  const titre = document.getElementById("titre").value;
-
-  if (!titre || dates.length === 0) {
-    alert("Ajoute un titre et des dates");
-    return;
-  }
-
-  const id = Math.random().toString(36).substring(2, 10);
-
-  const lien = `https://dgidgi85.github.io/sondage/?id=${id}&titre=${encodeURIComponent(titre)}&dates=${encodeURIComponent(JSON.stringify(dates))}`;
-
-  document.getElementById("resultBox").classList.remove("hidden");
-
-  document.getElementById("lienSondage").value = lien;
-}
+    var titre = document.getElementById('title').value.trim();
 }
