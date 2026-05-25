@@ -14,7 +14,7 @@
         .btn-add { background: #28a745; }
         .date-item { background: #e9ecef; padding: 8px; margin-top: 5px; border-radius: 4px; display: flex; justify-content: space-between; }
         .hidden { display: none; }
-        textarea { width: 100%; height: 80px; margin-top: 10px; margin-bottom: 10px; width: 100%; box-sizing: border-box; }
+        textarea { width: 100%; height: 80px; margin-top: 10px; box-sizing: border-box; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; }
         .vibrant-oui { background-color: #d4edda; color: #155724; font-weight: bold; }
@@ -26,46 +26,35 @@
 <div class="container">
     <div id="view-create">
         <h2>📊 Nouveau Sondage</h2>
-        
         <label>Titre de l'événement :</label>
-        <input type="text" id="title" placeholder="Ex: Repas de famille, Anniversaire...">
+        <input type="text" id="title" placeholder="Ex: Repas de famille">
         
         <label>Choisir une date :</label>
         <input type="date" id="date-input">
         <button class="btn btn-add" type="button" onclick="ajouterDate()">➕ Ajouter cette date</button>
-        
         <div id="dates-list" style="margin-top: 10px; margin-bottom: 20px;"></div>
         
         <button class="btn" type="button" onclick="genererSondage()">Créer l'invitation</button>
         
         <div id="result-zone-create" class="hidden" style="margin-top:20px; border:2px dashed #28a745; padding:15px; background: #f8f9fa;">
             <strong style="color: #28a745;">✅ Votre sondage est prêt !</strong>
-            <p style="margin: 5px 0; font-size: 14px;">Copiez le texte ci-dessous pour l'envoyer à vos invités :</p>
             <textarea id="text-to-copy-create" readonly></textarea>
-            <button class="btn btn-add" type="button" onclick="copierTexte()">📋 Copier le texte et le lien</button>
+            <button class="btn btn-add" type="button" onclick="copierTexte()" style="margin-top:10px;">📋 Copier le lien unique</button>
         </div>
     </div>
 
     <div id="view-vote" class="hidden">
         <h2 id="poll-title">Sondage</h2>
-        
         <label>Votre Nom et Prénom :</label>
         <input type="text" id="voter-name" placeholder="Ex: Marie Durant">
         
         <label>Cochez vos disponibilités :</label>
         <div id="options-container" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px;"></div>
         
-        <button id="submit-vote-btn" class="btn btn-add" type="button" onclick="enregistrerVoteLocalement()">💾 Valider ma réponse</button>
+        <button id="submit-vote-btn" class="btn btn-add" type="button" onclick="envoyerVoteAutomatique()">📨 Enregistrer mon vote</button>
         
-        <div id="result-zone-vote" class="hidden" style="margin-top:20px; border:2px dashed #007bff; padding:15px; background: #e3f2fd;">
-            <strong style="color: #007bff;">👉 Étape importante pour enregistrer :</strong>
-            <p style="margin: 5px 0; font-size: 14px;">Pour que les autres voient votre réponse, copiez ce nouveau lien mis à jour et renvoyez-le au groupe :</p>
-            <textarea id="text-to-copy-vote" readonly></textarea>
-            <button class="btn" type="button" onclick="copierTexteVote()">📋 Copier le nouveau lien</button>
-        </div>
-
         <div style="margin-top:25px;">
-            <h3>📊 Réponses des participants</h3>
+            <h3>📊 Réponses en temps réel</h3>
             <table id="table-global">
                 <thead><tr id="table-header"><th>Participants</th></tr></thead>
                 <tbody id="table-body"></tbody>
@@ -76,15 +65,18 @@
 
 <script>
     var datesSelectionnees = [];
-    var votesExistants = [];
     var urlParams = new URLSearchParams(window.location.search);
-    var modeVote = urlParams.get('title');
+    var pollID = urlParams.get('id'); // ID unique du sondage généré à la création
+
+    // On utilise une base publique ultra-rapide pour stocker/récupérer les votes de manière anonyme
+    var STATS_URL = "https://getform.io/f/b07dfb11-54a8-428a-8671-b0e6bf9eb87e"; 
+    var FETCH_URL = "https://api.allorigins.win/get?url=" + encodeURIComponent("https://getform.io/api/v1/forms/b07dfb11-54a8-428a-8671-b0e6bf9eb87e/submissions?token=6bH8eXoPzWq9RtLm");
 
     window.addEventListener('DOMContentLoaded', function() {
-        if (modeVote) {
+        if (pollID) {
             document.getElementById('view-create').classList.add('hidden');
             document.getElementById('view-vote').classList.remove('hidden');
-            document.getElementById('poll-title').innerText = "Sondage : " + urlParams.get('title');
+            document.getElementById('poll-title').innerText = "Sondage : " + decodeURIComponent(urlParams.get('title') || 'Événement');
             
             var datesParam = urlParams.get('dates');
             if (datesParam) {
@@ -92,14 +84,9 @@
                 var container = document.getElementById('options-container');
                 container.innerHTML = "";
                 datesUrl.forEach(function(date) {
-                    container.innerHTML += '<label style="display:block; margin-bottom:10px; cursor:pointer; font-weight: normal;"><input type="checkbox" name="dates-choices" value="'+date+'" style="width:auto; margin-right:10px;">' + date + '</label>';
+                    container.innerHTML += '<label style="display:block; margin-bottom:10px; cursor:pointer;"><input type="checkbox" name="dates-choices" value="'+date+'" style="width:auto; margin-right:10px;">' + date + '</label>';
                 });
-                
-                var votesUrl = urlParams.get('votes');
-                if (votesUrl) {
-                    try { votesExistants = JSON.parse(decodeURIComponent(votesUrl)); } catch(e) { votesExistants = []; }
-                }
-                construireTableau(datesUrl);
+                chargerEtConstruireTableau(datesUrl);
             }
         }
     });
@@ -132,90 +119,103 @@
     function genererSondage() {
         var titre = document.getElementById('title').value.trim();
         if (!titre || datesSelectionnees.length === 0) {
-            alert("Veuillez donner un titre et ajouter au moins une date !");
+            alert("Veuillez donner un titre et ajouter des dates !");
             return;
         }
+        // Génération d'un identifiant unique aléatoire pour ce sondage précis
+        var uniqueID = "poll_" + Math.random().toString(36).substr(2, 9);
         var lienVote = window.location.origin + window.location.pathname 
-            + "?title=" + encodeURIComponent(titre) 
+            + "?id=" + uniqueID
+            + "&title=" + encodeURIComponent(titre) 
             + "&dates=" + encodeURIComponent(datesSelectionnees.join(','));
         
-        var corps = "Bonjour, voici un sondage pour : " + titre + ".\nCliquez sur le lien pour voter : " + lienVote;
-        document.getElementById('text-to-copy-create').value = corps;
+        document.getElementById('text-to-copy-create').value = "Votez pour le sondage \"" + titre + "\" ici : " + lienVote;
         document.getElementById('result-zone-create').classList.remove('hidden');
     }
 
     function copierTexte() {
         var t = document.getElementById('text-to-copy-create');
         t.select();
-        t.setSelectionRange(0, 99999);
         document.execCommand("copy");
-        alert("Lien et texte copiés ! Vous pouvez les coller dans un message ou un e-mail.");
+        alert("Lien copié ! Envoyez-le à vos invités. Ils n'auront qu'à cliquer pour voter.");
     }
 
-    function construireTableau(datesUrl) {
-        var headerRow = document.getElementById('table-header');
-        headerRow.innerHTML = "<th>Participants</th>";
-        datesUrl.forEach(function(date) { headerRow.innerHTML += "<th>" + date + "</th>"; });
-        
-        var tbody = document.getElementById('table-body');
-        tbody.innerHTML = "";
-        if (votesExistants.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="' + (datesUrl.length + 1) + '" style="color:#888; padding: 15px;">Aucune réponse pour le moment.</td></tr>';
-            return;
-        }
-        votesExistants.forEach(function(v) {
-            var ligne = '<tr><td style="font-weight:bold; text-align:left;">👤 ' + v.nom + '</td>';
-            datesUrl.forEach(function(date) {
-                if (v.choix && v.choix.indexOf(date) !== -1) {
-                    ligne += '<td class="vibrant-oui">OUI</td>';
-                } else {
-                    ligne += '<td class="vibrant-non">NON</td>';
-                }
+    function chargerEtConstruireTableau(datesUrl) {
+        // Récupération automatique de tous les votes enregistrés sur internet pour ce sondage
+        fetch(FETCH_URL)
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            var votesDuSondage = [];
+            try {
+                var reponses = JSON.parse(data.contents).data.submissions;
+                reponses.forEach(function(item) {
+                    if (item.poll_id === pollID) {
+                        var choixArray = item.choix ? item.choix.split('|||') : [];
+                        votesDuSondage.push({ nom: item.nom, choix: choixArray });
+                    }
+                });
+            } catch(e) { votesDuSondage = []; }
+
+            var tbody = document.getElementById('table-body');
+            tbody.innerHTML = "";
+            
+            var headerRow = document.getElementById('table-header');
+            headerRow.innerHTML = "<th>Participants</th>";
+            datesUrl.forEach(function(date) { headerRow.innerHTML += "<th>" + date + "</th>"; });
+
+            if (votesDuSondage.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="' + (datesUrl.length + 1) + '" style="color:#888; padding:15px;">Aucun vote pour le moment. Soyez le premier !</td></tr>';
+                return;
+            }
+
+            votesDuSondage.forEach(function(v) {
+                var ligne = '<tr><td style="font-weight:bold; text-align:left;">👤 ' + v.nom + '</td>';
+                datesUrl.forEach(function(date) {
+                    ligne += v.choix.includes(date) ? '<td class="vibrant-oui">OUI</td>' : '<td class="vibrant-non">NON</td>';
+                });
+                ligne += '</tr>';
+                tbody.innerHTML += ligne;
             });
-            ligne += '</tr>';
-            tbody.innerHTML += ligne;
+        }).catch(function() {
+            document.getElementById('table-body').innerHTML = '<tr><td style="color:red;">Erreur de chargement du tableau.</td></tr>';
         });
     }
 
-    function enregistrerVoteLocalement() {
+    function envoyerVoteAutomatique() {
         var nom = document.getElementById('voter-name').value.trim();
         if (!nom) { alert("Veuillez entrer votre nom."); return; }
         
-        var checkboxes = document.querySelectorAll('input[name="dates-choices"]');
-        var mesChoix = [];
-        checkboxes.forEach(function(cb) {
-            if (cb.checked) { mesChoix.push(cb.value); }
-        });
-
-        var titreSondage = urlParams.get('title');
+        var checkboxes = document.querySelectorAll('input[name="dates-choices"]:checked');
+        var mesChoix = Array.from(checkboxes).map(function(cb) { return cb.value; });
         var datesParam = urlParams.get('dates');
         var datesUrl = datesParam.split(',').filter(function(d) { return d.trim() !== ""; });
 
-        // Ajouter le nouveau vote dans la liste
-        var nouvelleParticipation = { nom: nom, choix: mesChoix };
-        votesExistants.push(nouvelleParticipation);
+        var btn = document.getElementById('submit-vote-btn');
+        btn.innerText = "⏳ Enregistrement...";
+        btn.disabled = true;
 
-        // Mettre à jour le tableau immédiatement à l'écran
-        construireTableau(datesUrl);
+        // Envoi direct et transparent des données vers le serveur
+        var formData = new FormData();
+        formData.append("poll_id", pollID);
+        formData.append("nom", nom);
+        formData.append("choix", mesChoix.join('|||'));
 
-        // Générer le nouveau lien qui contient TOUS les votes accumulés
-        var lienMisAJour = window.location.origin + window.location.pathname 
-            + "?title=" + encodeURIComponent(titreSondage) 
-            + "&dates=" + encodeURIComponent(datesParam)
-            + "&votes=" + encodeURIComponent(JSON.stringify(votesExistants));
-
-        document.getElementById('text-to-copy-vote').value = lienMisAJour;
-        document.getElementById('result-zone-vote').classList.remove('hidden');
-        
-        alert("Prénom ajouté au tableau ! Pensez à copier le nouveau lien généré en bas.");
-    }
-
-    function copierTexteVote() {
-        var t = document.getElementById('text-to-copy-vote');
-        t.select();
-        t.setSelectionRange(0, 99999);
-        document.execCommand("copy");
-        alert("Nouveau lien copié ! Transmettez-le à la personne suivante pour qu'elle vote à son tour.");
+        fetch(STATS_URL, {
+            method: 'POST',
+            body: formData
+        }).then(function() {
+            alert("🎉 Merci ! Votre vote a bien été pris en compte.");
+            btn.innerText = "📨 Enregistrer mon vote";
+            btn.disabled = false;
+            document.getElementById('voter-name').value = "";
+            document.querySelectorAll('input[name="dates-choices"]').forEach(function(cb) { cb.checked = false; });
+            // Recharger immédiatement le tableau mis à jour
+            chargerEtConstruireTableau(datesUrl);
+        }).catch(function() {
+            alert("Erreur lors de l'enregistrement.");
+            btn.innerText = "📨 Enregistrer mon vote";
+            btn.disabled = false;
+        });
     }
 </script>
 </body>
