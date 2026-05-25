@@ -19,7 +19,6 @@
         th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; }
         .vibrant-oui { background-color: #d4edda; color: #155724; font-weight: bold; }
         .vibrant-non { background-color: #f8d7da; color: #721c24; }
-        .box-succes { background: #d4edda; border: 2px dashed #28a745; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: center; }
     </style>
 </head>
 <body>
@@ -28,8 +27,8 @@
     <div id="view-create">
         <h2>📊 Nouveau Sondage</h2>
         
-        <label>Votre adresse e-mail (pour recevoir les réponses) :</label>
-        <input type="email" id="organizer-email" placeholder="exemple@mail.com">
+        <label>Collez votre ID FormBold ici :</label>
+        <input type="text" id="formbold-id" placeholder="Ex: oXyZa123">
 
         <label>Titre de l'événement :</label>
         <input type="text" id="title" placeholder="Ex: Repas de famille">
@@ -58,18 +57,13 @@
             <label>Cochez vos disponibilités :</label>
             <div id="options-container" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px;"></div>
             
-            <button id="submit-vote-btn" class="btn btn-add" type="button" onclick="envoyerVoteParEmail()">📨 Envoyer ma réponse</button>
-        </div>
-
-        <div id="zone-confirmation-vote" class="box-succes hidden">
-            <strong style="color: #155724; font-size: 16px;">🎉 Vote préparé !</strong>
-            <p style="margin: 5px 0 0 0; font-size: 14px;">Votre application de messagerie vient de s'ouvrir. Cliquez simplement sur <strong>"Envoyer"</strong> dans votre mail pour transmettre vos disponibilités !</p>
+            <button id="submit-vote-btn" class="btn btn-add" type="button" onclick="envoyerVoteAutomatique()">📨 Envoyer ma réponse</button>
         </div>
         
         <div style="margin-top:25px;">
-            <h3>📊 Réponses du participant actuel</h3>
+            <h3>📊 Réponses des participants</h3>
             <table id="table-global">
-                <thead><tr id="table-header"><th>Participant</th></tr></thead>
+                <thead><tr id="table-header"><th>Participants</th></tr></thead>
                 <tbody id="table-body"></tbody>
             </table>
         </div>
@@ -78,12 +72,13 @@
 
 <script>
     var datesSelectionnees = [];
+    var votesLocaux = [];
     var urlParams = new URLSearchParams(window.location.search);
     var titreSondage = urlParams.get('title');
-    var mailCreateur = urlParams.get('to');
+    var formID = urlParams.get('fb');
 
     window.addEventListener('DOMContentLoaded', function() {
-        if (titreSondage && mailCreateur) {
+        if (titreSondage && formID) {
             document.getElementById('view-create').classList.add('hidden');
             document.getElementById('view-vote').classList.remove('hidden');
             document.getElementById('poll-title').innerText = "Sondage : " + decodeURIComponent(titreSondage);
@@ -98,11 +93,7 @@
                     container.innerHTML += '<label style="display:block; margin-bottom:10px; cursor:pointer;"><input type="checkbox" name="dates-choices" value="'+date+'" style="width:auto; margin-right:10px;">' + date + '</label>';
                 });
                 
-                // Préparer la structure du tableau vide
-                var headerRow = document.getElementById('table-header');
-                headerRow.innerHTML = "<th>Participant</th>";
-                datesUrl.forEach(function(date) { headerRow.innerHTML += "<th>" + date + "</th>"; });
-                document.getElementById('table-body').innerHTML = '<tr><td colspan="' + (datesUrl.length + 1) + '" style="color:#888; padding:15px;">Cochez vos choix ci-dessus.</td></tr>';
+                construireTableau(datesUrl);
             }
         }
     });
@@ -133,15 +124,15 @@
     }
 
     function genererSondage() {
-        var email = document.getElementById('organizer-email').value.trim();
+        var idBold = document.getElementById('formbold-id').value.trim();
         var titre = document.getElementById('title').value.trim();
-        if (!email || !titre || datesSelectionnees.length === 0) {
-            alert("Veuillez remplir tous les champs (E-mail, Titre et Dates) !");
+        if (!idBold || !titre || datesSelectionnees.length === 0) {
+            alert("Veuillez remplir l'ID FormBold, le Titre et ajouter des dates !");
             return;
         }
         var lienVote = window.location.origin + window.location.pathname 
             + "?title=" + encodeURIComponent(titre) 
-            + "&to=" + encodeURIComponent(email)
+            + "&fb=" + encodeURIComponent(idBold)
             + "&dates=" + encodeURIComponent(datesSelectionnees.join(','));
         
         document.getElementById('text-to-copy-create').value = "Votez pour le sondage \"" + titre + "\" ici : " + lienVote;
@@ -152,61 +143,80 @@
         var t = document.getElementById('text-to-copy-create');
         t.select();
         document.execCommand("copy");
-        alert("Lien copié ! Renvoyez-le à vos proches.");
+        alert("Lien copié ! Vous pouvez l'envoyer.");
     }
 
-    function envoyerVoteParEmail() {
+    function construireTableau(datesUrl) {
+        var headerRow = document.getElementById('table-header');
+        headerRow.innerHTML = "<th>Participants</th>";
+        datesUrl.forEach(function(date) { headerRow.innerHTML += "<th>" + date + "</th>"; });
+
+        var tbody = document.getElementById('table-body');
+        tbody.innerHTML = "";
+
+        if (votesLocaux.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="' + (datesUrl.length + 1) + '" style="color:#888; padding:15px;">Aucun vote visible sur cet écran pour le moment.</td></tr>';
+            return;
+        }
+
+        votesLocaux.forEach(function(v) {
+            var ligne = '<tr><td style="font-weight:bold; text-align:left;">👤 ' + v.nom + '</td>';
+            datesUrl.forEach(function(date) {
+                ligne += v.choix.includes(date) ? '<td class="vibrant-oui">OUI</td>' : '<td class="vibrant-non">NON</td>';
+            });
+            ligne += '</tr>';
+            tbody.innerHTML += ligne;
+        });
+    }
+
+    function envoyerVoteAutomatique() {
         var nom = document.getElementById('voter-name').value.trim();
         if (!nom) { alert("Veuillez entrer votre nom."); return; }
         
         var checkboxes = document.querySelectorAll('input[name="dates-choices"]');
         var choixOui = [];
-        var choixNon = [];
         var datesParam = urlParams.get('dates');
         var datesUrl = datesParam.split(',').filter(function(d) { return d.trim() !== ""; });
 
         checkboxes.forEach(function(cb) {
-            if (cb.checked) {
-                choixOui.push(cb.value);
-            } else {
-                choixNon.push(cb.value);
-            }
+            if (cb.checked) choixOui.push(cb.value);
         });
 
-        // Remplir visuellement le tableau à l'écran pour l'invité
-        var tbody = document.getElementById('table-body');
-        var ligne = '<tr><td style="font-weight:bold; text-align:left;">👤 ' + nom + '</td>';
-        datesUrl.forEach(function(date) {
-            ligne += choixOui.includes(date) ? '<td class="vibrant-oui">OUI</td>' : '<td class="vibrant-non">NON</td>';
+        var btn = document.getElementById('submit-vote-btn');
+        btn.innerText = "⏳ Envoi en cours...";
+        btn.disabled = true;
+
+        // Préparation des données pour ton e-mail
+        var données = {
+            "Événement": decodeURIComponent(titreSondage),
+            "Nom du participant": nom,
+            "Disponibilités (OUI)": choixOui.join(', ') || "Aucune date"
+        };
+
+        // Envoi direct, invisible et automatique vers FormBold (qui te l'envoie par mail)
+        fetch("https://formbold.com/s/" + formID, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(données)
+        })
+        .then(function() {
+            alert("🎉 Merci " + nom + ", votre vote a été envoyé directement à l'organisateur !");
+            
+            // Ajouter au tableau local à l'écran
+            votesLocaux.push({ nom: nom, choix: choixOui });
+            construireTableau(datesUrl);
+
+            // Réinitialiser le formulaire
+            document.getElementById('voter-name').value = "";
+            checkboxes.forEach(function(cb) { cb.checked = false; });
+            btn.innerText = "📨 Envoyer ma réponse";
+            btn.disabled = false;
+        })
+        .catch(function() {
+            alert("Erreur réseau lors de l'envoi.");
+            btn.innerText = "📨 Envoyer ma réponse";
+            btn.disabled = false;
         });
-        ligne += '</tr>';
-        tbody.innerHTML = ligne;
-
-        // Préparation du contenu du mail automatique
-        var sujetMail = "Réponse Sondage : " + decodeURIComponent(titreSondage) + " - " + nom;
-        var corpsMail = "Bonjour,\n\nVoici mes disponibilités pour \"" + decodeURIComponent(titreSondage) + "\" :\n\n";
-        
-        corpsMail += "✅ DISPONIBLE LE :\n";
-        if(choixOui.length > 0) {
-            choixOui.forEach(function(d) { corpsMail += " - " + d + "\n"; });
-        } else { corpsMail += " - Aucune date\n"; }
-
-        corpsMail += "\n❌ INDISPONIBLE LE :\n";
-        if(choixNon.length > 0) {
-            choixNon.forEach(function(d) { corpsMail += " - " + d + "\n"; });
-        } else { corpsMail += " - Aucune date\n"; }
-
-        // Commande magique pour ouvrir le logiciel de messagerie de l'invité tout pré-rempli
-        var mailtoUrl = "mailto:" + mailCreateur 
-            + "?subject=" + encodeURIComponent(sujetMail) 
-            + "&body=" + encodeURIComponent(corpsMail);
-
-        // Déclenchement de l'ouverture du mail
-        window.location.href = mailtoUrl;
-
-        // Basculer l'affichage pour confirmer
-        document.getElementById('zone-formulaire-vote').classList.add('hidden');
-        document.getElementById('zone-confirmation-vote').classList.remove('hidden');
     }
 </script>
 </body>
