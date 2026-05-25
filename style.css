@@ -1,80 +1,70 @@
 body {
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 16px;
-  margin-top: 10px;
+    font-family: sans-serif;
+    background: #f0f2f5;
+    padding: 20px;
+    color: #333;
 }
 
-button:hover {
-  background: #239b56;
+.container {
+    max-width: 700px;
+    background: white;
+    padding: 25px;
+    border-radius: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    margin: auto;
 }
 
-.mainBtn {
-  width: 100%;
-  font-size: 18px;
-  font-weight: bold;
+h2,
+h3 {
+    color: #28a745;
+    text-align: center;
 }
 
-.row {
-  display: flex;
-  gap: 10px;
+label {
+    font-weight: bold;
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 5px;
 }
 
-.hidden {
-  display: none;
+input,
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 16px;
 }
 
-.dateItem {
-  background: #d5f5e3;
-  padding: 10px;
-  margin-top: 10px;
-  border-radius: 10px;
-  display: flex;
-  justify-content: space-between;
+textarea {
+    min-height: 100px;
 }
 
-.voteChoice {
-  background: #f8f9f9;
-  padding: 15px;
-  border-radius: 10px;
-  margin-top: 10px;
+.date-row {
+    display: flex;
+    gap: 10px;
 }
 
-.voteChoice label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 12px;
+    width: 100%;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 10px;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
+.btn:hover {
+    opacity: 0.9;
 }
 
-th,
-td {
-  border: 1px solid #ddd;
-  padding: 10px;
-  text-align: center;
+.btn-add {
+    background: #20c997;
 }
 
-th {
-  background: #28b463;
-  color: white;
-}
-
-.oui {
-  background: #d5f5e3;
-  font-weight: bold;
-}
-
-.non {
-  background: #fadbd8;
-}
-
-@media(max-width:600px) {
-  .row {
-    flex-direction: column;
-  }
 }
