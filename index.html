@@ -26,12 +26,11 @@
 
         <div id="dates-list"></div>
 
-        <label>Adresses email des invités :</label>
+        <label>Partager le lien du sondage :</label>
 
-        <textarea
-            id="emails"
-            placeholder="email1@gmail.com&#10;email2@gmail.com&#10;email3@gmail.com"
-        ></textarea>
+        <p style="margin-top:0; color:#666;">
+            Copiez le lien puis envoyez-le par Outlook, Gmail, WhatsApp ou SMS.
+        </p>
 
         <button class="btn" onclick="genererSondage()">
             Créer le sondage
@@ -40,7 +39,7 @@
         <div id="result-zone-create" class="hidden">
 
             <strong class="success-text">
-                ✅ Votre sondage est prêt
+                ✅ Votre sondage est prêt — copiez le lien ou envoyez-le par mail
             </strong>
 
             <textarea id="text-to-copy-create" readonly></textarea>
@@ -50,7 +49,7 @@
             </button>
 
             <button class="btn btn-mail" onclick="ouvrirMail()">
-                📧 Envoyer les invitations
+                📧 Ouvrir votre mail
             </button>
 
         </div>
@@ -82,6 +81,4 @@
                         <th>Participants</th>
                     </tr>
                 </thead>
-                <tbody id="table-body"></tbody>
-            </table>
 </html>
