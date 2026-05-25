@@ -1,211 +1,73 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sondage Express</title>
-    <style>
-        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
-        .container { max-width: 600px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: auto; }
-        h2, h3 { color: #007bff; text-align: center; }
-        label { font-weight: bold; display: block; margin-top: 15px; margin-bottom: 5px; }
-        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; }
-        .btn { background: #007bff; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; }
-        .btn-add { background: #28a745; }
-        .date-item { background: #e9ecef; padding: 8px; margin-top: 5px; border-radius: 4px; display: flex; justify-content: space-between; }
-        .hidden { display: none; }
-        textarea { width: 100%; height: 80px; margin-top: 10px; box-sizing: border-box; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; }
-        .vibrant-oui { background-color: #d4edda; color: #155724; font-weight: bold; }
-        .vibrant-non { background-color: #f8d7da; color: #721c24; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sondage</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="container">
-    <div id="view-create">
-        <h2>📊 Nouveau Sondage</h2>
-        <label>Titre de l'événement :</label>
-        <input type="text" id="title" placeholder="Ex: Repas de famille">
-        
-        <label>Choisir une date :</label>
-        <input type="date" id="date-input">
-        <button class="btn btn-add" type="button" onclick="ajouterDate()">➕ Ajouter cette date</button>
-        <div id="dates-list" style="margin-top: 10px; margin-bottom: 20px;"></div>
-        
-        <button class="btn" type="button" onclick="genererSondage()">Créer l'invitation</button>
-        
-        <div id="result-zone-create" class="hidden" style="margin-top:20px; border:2px dashed #28a745; padding:15px; background: #f8f9fa;">
-            <strong style="color: #28a745;">✅ Votre sondage est prêt !</strong>
-            <textarea id="text-to-copy-create" readonly></textarea>
-            <button class="btn btn-add" type="button" onclick="copierTexte()" style="margin-top:10px;">📋 Copier le lien unique</button>
-        </div>
+
+  <h1>🟢 Sondage</h1>
+
+  <div id="createView">
+
+    <label>Titre du sondage</label>
+    <input type="text" id="titre" placeholder="Ex : Repas famille">
+
+    <label>Ajouter une date</label>
+    <div class="row">
+      <input type="date" id="dateInput">
+      <button onclick="ajouterDate()">Ajouter</button>
     </div>
 
-    <div id="view-vote" class="hidden">
-        <h2 id="poll-title">Sondage</h2>
-        <label>Votre Nom et Prénom :</label>
-        <input type="text" id="voter-name" placeholder="Ex: Marie Durant">
-        
-        <label>Cochez vos disponibilités :</label>
-        <div id="options-container" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px;"></div>
-        
-        <button id="submit-vote-btn" class="btn btn-add" type="button" onclick="envoyerVoteAutomatique()">📨 Enregistrer mon vote</button>
-        
-        <div style="margin-top:25px;">
-            <h3>📊 Réponses en temps réel</h3>
-            <table id="table-global">
-                <thead><tr id="table-header"><th>Participants</th></tr></thead>
-                <tbody id="table-body"></tbody>
-            </table>
-        </div>
+    <div id="datesList"></div>
+
+    <label>Emails des invités</label>
+    <textarea id="emails" placeholder="email1@gmail.com, email2@gmail.com"></textarea>
+
+    <button class="mainBtn" onclick="creerSondage()">Créer le sondage</button>
+
+    <div id="resultBox" class="hidden">
+      <h3>✅ Sondage créé</h3>
+
+      <textarea id="lienSondage" readonly></textarea>
+
+      <button onclick="copierLien()">📋 Copier le lien</button>
+
+      <button onclick="envoyerMail()">📧 Envoyer les invitations</button>
     </div>
+
+  </div>
+
+  <div id="voteView" class="hidden">
+
+    <h2 id="voteTitle"></h2>
+
+    <label>Votre prénom</label>
+    <input type="text" id="nom">
+
+    <div id="voteOptions"></div>
+
+    <button class="mainBtn" onclick="envoyerVote()">Valider</button>
+
+    <h3>📊 Résultats</h3>
+
+    <table>
+      <thead>
+        <tr id="tableHead">
+          <th>Participant</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+
+  </div>
+
 </div>
 
-<script>
-    var datesSelectionnees = [];
-    var votesGlobaux = [];
-    var urlParams = new URLSearchParams(window.location.search);
-    var pollID = urlParams.get('id'); 
-
-    // Base de données ultra-rapide dédiée et sécurisée pour ton application
-    var DB_URL = "https://kvdb.io/689NfXw8w6gZ7pUvYm87J4/" + pollID;
-
-    window.addEventListener('DOMContentLoaded', function() {
-        if (pollID) {
-            document.getElementById('view-create').classList.add('hidden');
-            document.getElementById('view-vote').classList.remove('hidden');
-            document.getElementById('poll-title').innerText = "Sondage : " + decodeURIComponent(urlParams.get('title') || 'Événement');
-            
-            var datesParam = urlParams.get('dates');
-            if (datesParam) {
-                var datesUrl = datesParam.split(',').filter(function(d) { return d.trim() !== ""; });
-                var container = document.getElementById('options-container');
-                container.innerHTML = "";
-                datesUrl.forEach(function(date) {
-                    container.innerHTML += '<label style="display:block; margin-bottom:10px; cursor:pointer;"><input type="checkbox" name="dates-choices" value="'+date+'" style="width:auto; margin-right:10px;">' + date + '</label>';
-                });
-                chargerEtConstruireTableau(datesUrl);
-            }
-        }
-    });
-
-    function ajouterDate() {
-        var dateInput = document.getElementById('date-input');
-        if (!dateInput.value) return;
-        var dateObj = new Date(dateInput.value);
-        var dateFormatee = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-        if (!datesSelectionnees.includes(dateFormatee)) {
-            datesSelectionnees.push(dateFormatee);
-            afficherDates();
-        }
-        dateInput.value = "";
-    }
-
-    function afficherDates() {
-        var list = document.getElementById('dates-list');
-        list.innerHTML = "";
-        datesSelectionnees.forEach(function(date, index) {
-            list.innerHTML += '<div class="date-item"><span>📅 ' + date + '</span><span style="color:red; cursor:pointer; font-weight:bold;" onclick="supprimerDate(' + index + ')">❌</span></div>';
-        });
-    }
-
-    function supprimerDate(index) {
-        datesSelectionnees.splice(index, 1);
-        afficherDates();
-    }
-
-    function genererSondage() {
-        var titre = document.getElementById('title').value.trim();
-        if (!titre || datesSelectionnees.length === 0) {
-            alert("Veuillez donner un titre et ajouter des dates !");
-            return;
-        }
-        var uniqueID = "id_" + Math.random().toString(36).substr(2, 9);
-        var lienVote = window.location.origin + window.location.pathname 
-            + "?id=" + uniqueID
-            + "&title=" + encodeURIComponent(titre) 
-            + "&dates=" + encodeURIComponent(datesSelectionnees.join(','));
-        
-        document.getElementById('text-to-copy-create').value = "Votez pour le sondage \"" + titre + "\" ici : " + lienVote;
-        document.getElementById('result-zone-create').classList.remove('hidden');
-    }
-
-    function copierTexte() {
-        var t = document.getElementById('text-to-copy-create');
-        t.select();
-        document.execCommand("copy");
-        alert("Lien copié ! Vous pouvez l'envoyer.");
-    }
-
-    function chargerEtConstruireTableau(datesUrl) {
-        fetch(DB_URL)
-        .then(function(res) { 
-            if (!res.ok) return []; // Si la clé n'existe pas encore, on renvoie une liste vide
-            return res.json(); 
-        })
-        .then(function(data) {
-            votesGlobaux = Array.isArray(data) ? data : [];
-            var tbody = document.getElementById('table-body');
-            tbody.innerHTML = "";
-            
-            var headerRow = document.getElementById('table-header');
-            headerRow.innerHTML = "<th>Participants</th>";
-            datesUrl.forEach(function(date) { headerRow.innerHTML += "<th>" + date + "</th>"; });
-
-            if (votesGlobaux.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="' + (datesUrl.length + 1) + '" style="color:#888; padding:15px;">Aucun vote pour le moment.</td></tr>';
-                return;
-            }
-
-            votesGlobaux.forEach(function(v) {
-                var ligne = '<tr><td style="font-weight:bold; text-align:left;">👤 ' + v.nom + '</td>';
-                datesUrl.forEach(function(date) {
-                    ligne += v.choix.includes(date) ? '<td class="vibrant-oui">OUI</td>' : '<td class="vibrant-non">NON</td>';
-                });
-                ligne += '</tr>';
-                tbody.innerHTML += ligne;
-            });
-        }).catch(function() {
-            document.getElementById('table-body').innerHTML = '<tr><td style="color:red; padding:15px;">Erreur de connexion à la base de données.</td></tr>';
-        });
-    }
-
-    function envoyerVoteAutomatique() {
-        var nom = document.getElementById('voter-name').value.trim();
-        if (!nom) { alert("Veuillez entrer votre nom."); return; }
-        
-        var checkboxes = document.querySelectorAll('input[name="dates-choices"]:checked');
-        var mesChoix = Array.from(checkboxes).map(function(cb) { return cb.value; });
-        var datesParam = urlParams.get('dates');
-        var datesUrl = datesParam.split(',').filter(function(d) { return d.trim() !== ""; });
-
-        var btn = document.getElementById('submit-vote-btn');
-        btn.innerText = "⏳ Enregistrement...";
-        btn.disabled = true;
-
-        // Étape 1 : On ajoute le nouveau vote à la liste existante
-        votesGlobaux.push({ nom: nom, choix: mesChoix });
-
-        // Étape 2 : On sauvegarde la liste complète directement dans la base de données
-        fetch(DB_URL, {
-            method: 'POST',
-            body: JSON.stringify(votesGlobaux),
-            headers: { 'Content-Type': 'application/json' }
-        }).then(function() {
-            alert("🎉 Vote enregistré avec succès !");
-            btn.innerText = "📨 Enregistrer mon vote";
-            btn.disabled = false;
-            document.getElementById('voter-name').value = "";
-            document.querySelectorAll('input[name="dates-choices"]').forEach(function(cb) { cb.checked = false; });
-            chargerEtConstruireTableau(datesUrl);
-        }).catch(function() {
-            alert("Erreur lors de la sauvegarde.");
-            btn.innerText = "📨 Enregistrer mon vote";
-            btn.disabled = false;
-        });
-    }
-</script>
+<script src="app.js"></script>
 </body>
 </html>
