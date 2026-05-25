@@ -64,4 +64,14 @@ function afficherDates() {
                 <span>📅 ${date}</span>
                 <span class="delete-date" onclick="supprimerDate(${index})">
                     ❌
+                </span>
+            </div>
+        `;
+
+    });
+}
+
+function supprimerDate(index) {
+
+    datesSelectionnees.splice(index, 1);
 }
