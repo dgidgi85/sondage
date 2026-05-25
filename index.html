@@ -47,7 +47,7 @@
         <input type="text" id="voter-name" placeholder="Ex: Marie">
         <label>Disponibilités :</label>
         <div id="options-container"></div>
-        <button id="submit-vote-btn" class="btn btn-add" type="button" onclick="envoyerVoteAutomatique()">📨 Envoyer</button>
+        <button id="submit-vote-btn" class="btn btn-add" type="button" onclick="envoyerVoteAutomatique()">📨 Envoyer ma réponse</button>
         <div style="margin-top:25px;">
             <h3>📊 Réponses</h3>
             <table id="table-global">
@@ -75,7 +75,7 @@
                 var container = document.getElementById('options-container');
                 container.innerHTML = "";
                 datesUrl.forEach(function(date) {
-                    container.innerHTML += '<label style="display:block; margin-bottom:10px;"><input type="checkbox" name="dates-choices" value="'+date+'" style="width:auto; margin-right:10px;">' + date + '</label>';
+                    container.innerHTML += '<label style="display:block; margin-bottom:10px; cursor:pointer;"><input type="checkbox" name="dates-choices" value="'+date+'" style="width:auto; margin-right:10px;">' + date + '</label>';
                 });
                 var votesUrl = urlParams.get('votes');
                 if (votesUrl) {
@@ -134,13 +134,17 @@
         var tbody = document.getElementById('table-body');
         tbody.innerHTML = "";
         if (votesExistants.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="' + (datesUrl.length + 1) + '" style="color:#888;">Aucune réponse.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="' + (datesUrl.length + 1) + '" style="color:#888;">Aucune réponse pour le moment.</td></tr>';
             return;
         }
         votesExistants.forEach(function(v) {
-            var ligne = '<tr><td style="font-weight:bold;">👤 ' + v.nom + '</td>';
+            var ligne = '<tr><td style="font-weight:bold; text-align:left;">👤 ' + v.nom + '</td>';
             datesUrl.forEach(function(date) {
-                ligne += v.choix.includes(date) ? '<td class="vibrant-oui">OUI</td>' : '<td class="vibrant-non">NON</td>';
+                if (v.choix && v.choix.indexOf(date) !== -1) {
+                    ligne += '<td class="vibrant-oui">OUI</td>';
+                } else {
+                    ligne += '<td class="vibrant-non">NON</td>';
+                }
             });
             ligne += '</tr>';
             tbody.innerHTML += ligne;
@@ -149,9 +153,16 @@
 
     function envoyerVoteAutomatique() {
         var nom = document.getElementById('voter-name').value.trim();
-        if (!nom) { alert("Nom requis."); return; }
-        var checkboxes = document.querySelectorAll('input[name="dates-choices"]:checked');
-        var mesChoix = Array.from(checkboxes).map(function(cb) { return cb.value; });
+        if (!nom) { alert("Veuillez entrer votre nom."); return; }
+        
+        var checkboxes = document.querySelectorAll('input[name="dates-choices"]');
+        var mesChoix = [];
+        checkboxes.forEach(function(cb) {
+            if (cb.checked) {
+                mesChoix.push(cb.value);
+            }
+        });
+
         var mailDestinataire = urlParams.get('to');
         var titreSondage = urlParams.get('title');
         var datesParam = urlParams.get('dates');
@@ -166,20 +177,36 @@
             + "&dates=" + encodeURIComponent(datesParam)
             + "&votes=" + encodeURIComponent(JSON.stringify(votesExistants));
 
+        var texteChoix = mesChoix.length > 0 ? "Disponible le : " + mesChoix.join(', ') : "❌ Indisponible à toutes les dates.";
+
+        var btn = document.getElementById('submit-vote-btn');
+        btn.innerText = "⏳ Envoi en cours...";
+        btn.disabled = true;
+
         fetch('https://formsubmit.co/ajax/' + mailDestinataire, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify({
                 "Événement": titreSondage,
                 "Nom": nom,
-                "Disponibilités": mesChoix.join(', '),
+                "Disponibilités": texteChoix,
                 "LIEN DU TABLEAU": lienMisAJour
             })
-        }).then(function() {
-            alert("Réponse envoyée !");
-            construireTableau(datesUrl);
-            document.getElementById('voter-name').value = "";
-            checkboxes.forEach(function(cb) { cb.checked = false; });
+        }).then(function(res) {
+            btn.innerText = "📨 Envoyer ma réponse";
+            btn.disabled = false;
+            if(res.ok) {
+                alert("🎉 Réponse enregistrée !");
+                construireTableau(datesUrl);
+                document.getElementById('voter-name').value = "";
+                checkboxes.forEach(function(cb) { cb.checked = false; });
+            } else {
+                alert("Erreur lors de l'envoi.");
+            }
+        }).catch(function() {
+            btn.innerText = "📨 Envoyer ma réponse";
+            btn.disabled = false;
+            alert("Erreur réseau.");
         });
     }
 </script>
