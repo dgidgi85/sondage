@@ -27,8 +27,8 @@
     <div id="view-create">
         <h2>📊 Nouveau Sondage</h2>
         
-        <label>Collez votre ID FormBold ici :</label>
-        <input type="text" id="formbold-id" placeholder="Ex: oXyZa123">
+        <label>Collez votre lien ou ID FormBold ici :</label>
+        <input type="text" id="formbold-id" placeholder="Ex: FoJq74 ou https://formbold.com/s/FoJq74">
 
         <label>Titre de l'événement :</label>
         <input type="text" id="title" placeholder="Ex: Repas de famille">
@@ -124,15 +124,23 @@
     }
 
     function genererSondage() {
-        var idBold = document.getElementById('formbold-id').value.trim();
+        var saisieBold = document.getElementById('formbold-id').value.trim();
         var titre = document.getElementById('title').value.trim();
-        if (!idBold || !titre || datesSelectionnees.length === 0) {
-            alert("Veuillez remplir l'ID FormBold, le Titre et ajouter des dates !");
+        
+        if (!saisieBold || !titre || datesSelectionnees.length === 0) {
+            alert("Veuillez remplir tous les champs !");
             return;
         }
+
+        // Nettoyage automatique : si l'utilisateur met le lien complet, on ne garde que la fin
+        var idNettoye = saisieBold;
+        if (saisieBold.includes('/s/')) {
+            idNettoye = saisieBold.split('/s/')[1].split('?')[0];
+        }
+
         var lienVote = window.location.origin + window.location.pathname 
             + "?title=" + encodeURIComponent(titre) 
-            + "&fb=" + encodeURIComponent(idBold)
+            + "&fb=" + encodeURIComponent(idNettoye)
             + "&dates=" + encodeURIComponent(datesSelectionnees.join(','));
         
         document.getElementById('text-to-copy-create').value = "Votez pour le sondage \"" + titre + "\" ici : " + lienVote;
@@ -143,7 +151,7 @@
         var t = document.getElementById('text-to-copy-create');
         t.select();
         document.execCommand("copy");
-        alert("Lien copié ! Vous pouvez l'envoyer.");
+        alert("Lien copié ! Vous pouvez l'envoyer à vos proches.");
     }
 
     function construireTableau(datesUrl) {
@@ -186,34 +194,32 @@
         btn.innerText = "⏳ Envoi en cours...";
         btn.disabled = true;
 
-        // Préparation des données pour ton e-mail
         var données = {
             "Événement": decodeURIComponent(titreSondage),
             "Nom du participant": nom,
             "Disponibilités (OUI)": choixOui.join(', ') || "Aucune date"
         };
 
-        // Envoi direct, invisible et automatique vers FormBold (qui te l'envoie par mail)
         fetch("https://formbold.com/s/" + formID, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(données)
         })
-        .then(function() {
+        .then(function(response) {
+            if (!response.ok) throw new Error();
+            
             alert("🎉 Merci " + nom + ", votre vote a été envoyé directement à l'organisateur !");
             
-            // Ajouter au tableau local à l'écran
             votesLocaux.push({ nom: nom, choix: choixOui });
             construireTableau(datesUrl);
 
-            // Réinitialiser le formulaire
             document.getElementById('voter-name').value = "";
             checkboxes.forEach(function(cb) { cb.checked = false; });
             btn.innerText = "📨 Envoyer ma réponse";
             btn.disabled = false;
         })
         .catch(function() {
-            alert("Erreur réseau lors de l'envoi.");
+            alert("Erreur lors de l'envoi. Vérifiez votre clé FormBold.");
             btn.innerText = "📨 Envoyer ma réponse";
             btn.disabled = false;
         });
