@@ -1,73 +1,87 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sondage</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sondage</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="container">
 
-  <h1>🟢 Sondage</h1>
+    <div id="view-create">
 
-  <div id="createView">
+        <h2>📊 Nouveau Sondage</h2>
 
-    <label>Titre du sondage</label>
-    <input type="text" id="titre" placeholder="Ex : Repas famille">
+        <label>Titre du sondage :</label>
+        <input type="text" id="title" placeholder="Ex : Repas famille">
 
-    <label>Ajouter une date</label>
-    <div class="row">
-      <input type="date" id="dateInput">
-      <button onclick="ajouterDate()">Ajouter</button>
+        <label>Ajouter une date :</label>
+
+        <div class="date-row">
+            <input type="date" id="date-input">
+            <button class="btn btn-add" onclick="ajouterDate()">➕ Ajouter</button>
+        </div>
+
+        <div id="dates-list"></div>
+
+        <label>Adresses email des invités :</label>
+
+        <textarea
+            id="emails"
+            placeholder="email1@gmail.com&#10;email2@gmail.com&#10;email3@gmail.com"
+        ></textarea>
+
+        <button class="btn" onclick="genererSondage()">
+            Créer le sondage
+        </button>
+
+        <div id="result-zone-create" class="hidden">
+
+            <strong class="success-text">
+                ✅ Votre sondage est prêt
+            </strong>
+
+            <textarea id="text-to-copy-create" readonly></textarea>
+
+            <button class="btn btn-add" onclick="copierTexte()">
+                📋 Copier le lien
+            </button>
+
+            <button class="btn btn-mail" onclick="ouvrirMail()">
+                📧 Envoyer les invitations
+            </button>
+
+        </div>
+
     </div>
 
-    <div id="datesList"></div>
+    <div id="view-vote" class="hidden">
 
-    <label>Emails des invités</label>
-    <textarea id="emails" placeholder="email1@gmail.com, email2@gmail.com"></textarea>
+        <h2 id="poll-title">Sondage</h2>
 
-    <button class="mainBtn" onclick="creerSondage()">Créer le sondage</button>
+        <label>Votre prénom :</label>
+        <input type="text" id="voter-name" placeholder="Ex : Marie">
 
-    <div id="resultBox" class="hidden">
-      <h3>✅ Sondage créé</h3>
+        <label>Choisissez vos disponibilités :</label>
 
-      <textarea id="lienSondage" readonly></textarea>
+        <div id="options-container"></div>
 
-      <button onclick="copierLien()">📋 Copier le lien</button>
+        <button class="btn btn-add" onclick="envoyerVote()">
+            📨 Valider mon vote
+        </button>
 
-      <button onclick="envoyerMail()">📧 Envoyer les invitations</button>
-    </div>
+        <div class="table-zone">
 
-  </div>
+            <h3>📊 Réponses</h3>
 
-  <div id="voteView" class="hidden">
-
-    <h2 id="voteTitle"></h2>
-
-    <label>Votre prénom</label>
-    <input type="text" id="nom">
-
-    <div id="voteOptions"></div>
-
-    <button class="mainBtn" onclick="envoyerVote()">Valider</button>
-
-    <h3>📊 Résultats</h3>
-
-    <table>
-      <thead>
-        <tr id="tableHead">
-          <th>Participant</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
-
-  </div>
-
-</div>
-
-<script src="app.js"></script>
-</body>
+            <table>
+                <thead>
+                    <tr id="table-header">
+                        <th>Participants</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
 </html>
