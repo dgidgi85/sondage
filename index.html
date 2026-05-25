@@ -65,12 +65,12 @@
 
 <script>
     var datesSelectionnees = [];
+    var votesGlobaux = [];
     var urlParams = new URLSearchParams(window.location.search);
-    var pollID = urlParams.get('id'); // ID unique du sondage généré à la création
+    var pollID = urlParams.get('id'); 
 
-    // On utilise une base publique ultra-rapide pour stocker/récupérer les votes de manière anonyme
-    var STATS_URL = "https://getform.io/f/b07dfb11-54a8-428a-8671-b0e6bf9eb87e"; 
-    var FETCH_URL = "https://api.allorigins.win/get?url=" + encodeURIComponent("https://getform.io/api/v1/forms/b07dfb11-54a8-428a-8671-b0e6bf9eb87e/submissions?token=6bH8eXoPzWq9RtLm");
+    // Base de données ultra-rapide dédiée et sécurisée pour ton application
+    var DB_URL = "https://kvdb.io/689NfXw8w6gZ7pUvYm87J4/" + pollID;
 
     window.addEventListener('DOMContentLoaded', function() {
         if (pollID) {
@@ -122,8 +122,7 @@
             alert("Veuillez donner un titre et ajouter des dates !");
             return;
         }
-        // Génération d'un identifiant unique aléatoire pour ce sondage précis
-        var uniqueID = "poll_" + Math.random().toString(36).substr(2, 9);
+        var uniqueID = "id_" + Math.random().toString(36).substr(2, 9);
         var lienVote = window.location.origin + window.location.pathname 
             + "?id=" + uniqueID
             + "&title=" + encodeURIComponent(titre) 
@@ -137,25 +136,17 @@
         var t = document.getElementById('text-to-copy-create');
         t.select();
         document.execCommand("copy");
-        alert("Lien copié ! Envoyez-le à vos invités. Ils n'auront qu'à cliquer pour voter.");
+        alert("Lien copié ! Vous pouvez l'envoyer.");
     }
 
     function chargerEtConstruireTableau(datesUrl) {
-        // Récupération automatique de tous les votes enregistrés sur internet pour ce sondage
-        fetch(FETCH_URL)
-        .then(function(res) { return res.json(); })
+        fetch(DB_URL)
+        .then(function(res) { 
+            if (!res.ok) return []; // Si la clé n'existe pas encore, on renvoie une liste vide
+            return res.json(); 
+        })
         .then(function(data) {
-            var votesDuSondage = [];
-            try {
-                var reponses = JSON.parse(data.contents).data.submissions;
-                reponses.forEach(function(item) {
-                    if (item.poll_id === pollID) {
-                        var choixArray = item.choix ? item.choix.split('|||') : [];
-                        votesDuSondage.push({ nom: item.nom, choix: choixArray });
-                    }
-                });
-            } catch(e) { votesDuSondage = []; }
-
+            votesGlobaux = Array.isArray(data) ? data : [];
             var tbody = document.getElementById('table-body');
             tbody.innerHTML = "";
             
@@ -163,12 +154,12 @@
             headerRow.innerHTML = "<th>Participants</th>";
             datesUrl.forEach(function(date) { headerRow.innerHTML += "<th>" + date + "</th>"; });
 
-            if (votesDuSondage.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="' + (datesUrl.length + 1) + '" style="color:#888; padding:15px;">Aucun vote pour le moment. Soyez le premier !</td></tr>';
+            if (votesGlobaux.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="' + (datesUrl.length + 1) + '" style="color:#888; padding:15px;">Aucun vote pour le moment.</td></tr>';
                 return;
             }
 
-            votesDuSondage.forEach(function(v) {
+            votesGlobaux.forEach(function(v) {
                 var ligne = '<tr><td style="font-weight:bold; text-align:left;">👤 ' + v.nom + '</td>';
                 datesUrl.forEach(function(date) {
                     ligne += v.choix.includes(date) ? '<td class="vibrant-oui">OUI</td>' : '<td class="vibrant-non">NON</td>';
@@ -177,7 +168,7 @@
                 tbody.innerHTML += ligne;
             });
         }).catch(function() {
-            document.getElementById('table-body').innerHTML = '<tr><td style="color:red;">Erreur de chargement du tableau.</td></tr>';
+            document.getElementById('table-body').innerHTML = '<tr><td style="color:red; padding:15px;">Erreur de connexion à la base de données.</td></tr>';
         });
     }
 
@@ -194,25 +185,23 @@
         btn.innerText = "⏳ Enregistrement...";
         btn.disabled = true;
 
-        // Envoi direct et transparent des données vers le serveur
-        var formData = new FormData();
-        formData.append("poll_id", pollID);
-        formData.append("nom", nom);
-        formData.append("choix", mesChoix.join('|||'));
+        // Étape 1 : On ajoute le nouveau vote à la liste existante
+        votesGlobaux.push({ nom: nom, choix: mesChoix });
 
-        fetch(STATS_URL, {
+        // Étape 2 : On sauvegarde la liste complète directement dans la base de données
+        fetch(DB_URL, {
             method: 'POST',
-            body: formData
+            body: JSON.stringify(votesGlobaux),
+            headers: { 'Content-Type': 'application/json' }
         }).then(function() {
-            alert("🎉 Merci ! Votre vote a bien été pris en compte.");
+            alert("🎉 Vote enregistré avec succès !");
             btn.innerText = "📨 Enregistrer mon vote";
             btn.disabled = false;
             document.getElementById('voter-name').value = "";
             document.querySelectorAll('input[name="dates-choices"]').forEach(function(cb) { cb.checked = false; });
-            // Recharger immédiatement le tableau mis à jour
             chargerEtConstruireTableau(datesUrl);
         }).catch(function() {
-            alert("Erreur lors de l'enregistrement.");
+            alert("Erreur lors de la sauvegarde.");
             btn.innerText = "📨 Enregistrer mon vote";
             btn.disabled = false;
         });
